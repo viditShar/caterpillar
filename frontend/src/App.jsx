@@ -1,63 +1,112 @@
 /**
- * CAT Smart Operator Assistant — React Frontend v2
- * Upgraded UI + Dual-Output ML Environmental Action Center
+ * CAT Smart Operator Assistant — React Frontend v3
+ * 5-Tab Industrial UI: Tasks · Telemetry · Safety+Proximity · Env Analysis · Training
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
-// ---------------------------------------------------------------------------
-// i18n Dictionary
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// i18n DICTIONARY
+// ===========================================================================
 const DICT = {
   en: {
     appTitle: "CAT Smart Operator Assistant",
     appSubtitle: "EXC001 · OP1001 · Live Operations",
-    navTelemetry: "Telemetry",
-    navEnvironment: "Env. Analysis",
-    navTraining: "Training Hub",
-    // Safety banner
-    safetyBannerTitle: "⚠ ACTIVE SAFETY ALERT",
-    seatbeltAlert: "Seatbelt UNFASTENED — Fasten immediately before operating.",
-    idlingAlert: (m) => `Excessive idling: ${m} min detected (threshold: 45 min).`,
-    playAudio: "🔊 Play Voice Alert",
-    dismiss: "Dismiss",
-    // Telemetry
+    // Nav
+    navTasks:       "📋 Tasks",
+    navTelemetry:   "📊 Telemetry",
+    navSafety:      "⚠️ Safety & Proximity",
+    navEnv:         "🌧️ Env. Analysis",
+    navTraining:    "🎓 Training Hub",
+    // Global
+    loading:        "Loading data…",
+    errorLoad:      "Failed to load. Ensure the backend is running on port 5000.",
+    errorPost:      "Request failed. Check backend connection.",
+    // ── Tab 1: Tasks ──
+    taskTitle:      "Daily Task Dashboard",
+    taskSubtitle:   "Today's scheduled work orders — 2025-05-02",
+    kpiTotal:       "Total Tasks",
+    kpiCompleted:   "Completed",
+    kpiRemaining:   "Remaining",
+    kpiNextPriority:"Next Priority",
+    colTask:        "Task / Location",
+    colCycles:      "Cycles",
+    colTarget:      "Target Time",
+    colStatus:      "Status",
+    colPriority:    "Priority",
+    colActions:     "Update",
+    markComplete:   "✔ Complete",
+    markProgress:   "▶ Start",
+    markPending:    "⏸ Pause",
+    high:           "High",
+    normal:         "Normal",
+    inProgress:     "In Progress",
+    pending:        "Pending",
+    completed:      "Completed",
+    cycleProgress:  (done, total) => `${done}/${total} cycles`,
+    // ── Tab 2: Telemetry ──
     telemetryTitle: "Live Telemetry Feed",
-    colTimestamp: "Timestamp",
-    colEngineHrs: "Engine Hrs",
-    colFuel: "Fuel (L)",
-    colCycles: "Load Cycles",
-    colIdle: "Idle (min)",
-    colSeatbelt: "Seatbelt",
-    colAlert: "Alert",
-    fastened: "Fastened",
-    unfastened: "Unfastened",
-    yes: "YES",
-    no: "NO",
-    kpiEngineHrs: "Engine Hours",
-    kpiFuelTotal: "Total Fuel",
-    kpiCycles: "Load Cycles",
-    kpiAlerts: "Safety Alerts",
-    // Environment analysis
-    envTitle: "Environmental Impact & Action Center",
-    envSubtitle: "Enter operating conditions to get ML-powered ETA, risk assessment, and operator guidance.",
-    lblLoadCycles: "Load Cycles",
-    lblFuel: "Estimated Fuel (L)",
-    lblWeather: "Weather Severity",
-    lblGround: "Ground Stability",
-    lblTemp: "Ambient Temp (°C)",
-    weatherOpts: ["0 — Clear", "1 — Light Rain", "2 — Heavy Rain", "3 — Storm"],
-    groundOpts: ["0 — Firm / Dry", "1 — Soft / Wet", "2 — Loose / Muddy", "3 — Unstable / Rocky"],
-    analyzeBtn: "Analyze Conditions",
-    analyzing: "Analyzing…",
-    resultETA: "Predicted Task ETA",
-    resultRisk: "Safety Risk Level",
-    resultImpacts: "Machine Limits Impact",
-    resultActions: "Recommended Next Steps",
-    minutes: "min",
-    // Training
-    trainingTitle: "Operator Training Hub",
-    checklistTitle: "Pre-Shift Safety Checklist",
+    colTimestamp:   "Timestamp",
+    colEngineHrs:   "Engine Hrs",
+    colFuel:        "Fuel (L)",
+    colLoadCycles:  "Load Cycles",
+    colIdle:        "Idle (min)",
+    colSeatbelt:    "Seatbelt",
+    colAlert:       "Alert",
+    fastened:       "Fastened",
+    unfastened:     "Unfastened",
+    yes:            "YES",
+    no:             "NO",
+    kpiEngineHrs:   "Engine Hours",
+    kpiFuelTotal:   "Total Fuel",
+    kpiLoadCycles:  "Load Cycles",
+    kpiAlerts:      "Safety Alerts",
+    // ── Tab 3: Safety & Proximity ──
+    safetyTitle:         "Safety & Proximity Radar",
+    safetyBannerTitle:   "⚠ ACTIVE SAFETY ALERT",
+    seatbeltAlert:       "Seatbelt UNFASTENED — Fasten immediately before operating.",
+    idlingAlert:         (m) => `Excessive idling: ${m} min detected (threshold: 45 min).`,
+    playAudio:           "🔊 Play Voice Alert",
+    dismiss:             "Dismiss",
+    proximityTitle:      "Live Proximity Hazard Monitor",
+    noHazards:           "No active proximity hazards detected.",
+    incidentTitle:       "Log New Incident",
+    incidentType:        "Incident Type",
+    incidentSeverity:    "Severity",
+    incidentLocation:    "Location",
+    incidentNotes:       "Notes / Description",
+    incidentSubmit:      "Submit Incident Report",
+    incidentSubmitting:  "Submitting…",
+    incidentSuccess:     "✅ Incident logged successfully.",
+    incidentHistoryTitle:"Incident History",
+    incidentTypes:       ["Near Miss", "Equipment Fault", "Safety Violation", "Environmental", "Injury", "Property Damage"],
+    severities:          ["LOW", "MODERATE", "HIGH", "CRITICAL"],
+    zone:                "Zone",
+    hazardType:          "Hazard",
+    severity:            "Severity",
+    distance:            "Distance",
+    bearing:             "Bearing",
+    operator:            "Operator",
+    // ── Tab 4: Env Analysis ──
+    envTitle:       "Environmental Impact & ML Action Center",
+    envSubtitle:    "Enter operating conditions for ML-powered ETA, risk assessment, and operator guidance.",
+    lblLoadCycles:  "Load Cycles",
+    lblFuel:        "Estimated Fuel (L)",
+    lblWeather:     "Weather Severity",
+    lblGround:      "Ground Stability",
+    lblTemp:        "Ambient Temp (°C)",
+    weatherOpts:    ["0 — Clear", "1 — Light Rain", "2 — Heavy Rain", "3 — Storm"],
+    groundOpts:     ["0 — Firm / Dry", "1 — Soft / Wet", "2 — Loose / Muddy", "3 — Unstable / Rocky"],
+    analyzeBtn:     "Analyze Conditions",
+    analyzing:      "Analyzing…",
+    resultETA:      "Predicted Task ETA",
+    resultRisk:     "Safety Risk Level",
+    resultImpacts:  "Machine Limits Impact",
+    resultActions:  "Recommended Next Steps",
+    minutes:        "min",
+    // ── Tab 5: Training ──
+    trainingTitle:      "Operator Training & Simulation Hub",
+    checklistTitle:     "Pre-Shift Safety Checklist",
     checklistItems: [
       "Inspect hydraulic lines for leaks",
       "Verify bucket teeth & attachment integrity",
@@ -68,135 +117,259 @@ const DICT = {
       "Confirm radio / comms operational",
       "Check track tension and undercarriage",
     ],
-    microTitle: "Micro-Learning Cards",
+    checkAll:           "All checks complete — Safe to operate! ✅",
+    microTitle:         "Micro-Learning Cards",
     cards: [
-      { icon: "🔄", title: "Safe Swing Zones", tag: "Safety", body: "Always check blind spots before rotating the upper structure. Maintain a 3 m exclusion zone around the machine at all times." },
-      { icon: "⛽", title: "Fuel-Efficient Digging", tag: "Efficiency", body: "Match bucket size to material density. Short, deliberate cycles reduce fuel consumption by up to 18%." },
-      { icon: "🏔️", title: "Adverse Terrain Protocol", tag: "Terrain", body: "On slopes >15°, lower the boom fully when parking. Engage Travel Lock on muddy or wet surfaces." },
-      { icon: "🌡️", title: "Extreme Temperature Ops", tag: "Climate", body: "Below 0°C: run 10-min warm-up idle. Above 35°C: check coolant every 2 hours and reduce continuous duty cycle." },
+      { icon: "🔄", title: "Safe Swing Zones",          tag: "Safety",     body: "Always check blind spots before rotating. Maintain a 3 m exclusion zone at all times." },
+      { icon: "⛽", title: "Fuel-Efficient Digging",    tag: "Efficiency", body: "Match bucket size to material density. Short cycles reduce fuel consumption by up to 18%." },
+      { icon: "🏔️", title: "Adverse Terrain Protocol", tag: "Terrain",    body: "On slopes >15°, lower boom fully when parking. Engage Travel Lock on muddy surfaces." },
+      { icon: "🌡️", title: "Extreme Temperature Ops",  tag: "Climate",    body: "Below 0°C: 10-min warm-up idle. Above 35°C: check coolant every 2 hours." },
     ],
-    checkAll: "All checks complete — Safe to operate! ✅",
-    // General
-    loading: "Loading data…",
-    errorLoad: "Failed to load. Check the backend is running on port 5000.",
-    errorAnalyze: "Analysis failed. Check backend connection.",
+    simTitle:           "Safety Simulator & Instructor Booking",
+    simScenarios: [
+      { id: "sim1", icon: "🏔️", title: "Slope Stabilisation Simulation",   desc: "Practice safe excavation on 15°–30° embankments. Includes tilt-alarm scenarios." },
+      { id: "sim2", icon: "👷", title: "Pedestrian Proximity Response",     desc: "React-time drill for personnel detection within 3 m and 5 m exclusion zones." },
+      { id: "sim3", icon: "⚡", title: "Overhead Utility Avoidance",        desc: "Boom height management near live cables. Includes emergency shutdown procedure." },
+      { id: "sim4", icon: "🌊", title: "Flood & Soft Ground Recovery",      desc: "Machine recovery protocol on waterlogged terrain. Track-lock and extraction steps." },
+    ],
+    launchSim:          "Launch Simulation",
+    bookInstructor:     "Book Instructor Session",
+    simModalTitle:      "Simulation Launch",
+    simModalBody:       (title) => `Launching: "${title}"\n\nIn a production build this opens the full VR/AR simulation module. For this prototype, the scenario parameters have been preloaded.`,
+    bookModalTitle:     "Instructor Booking",
+    bookName:           "Your Name",
+    bookDate:           "Preferred Date",
+    bookScenario:       "Scenario",
+    bookSubmit:         "Confirm Booking",
+    bookSuccess:        "✅ Booking confirmed! Instructor will contact you within 2 hours.",
+    closeModal:         "Close",
+    // Footer
     footerText: "© 2025 Caterpillar Inc. · Smart Operator Assistant · Hackathon Prototype",
   },
 
+  // ── SPANISH ────────────────────────────────────────────────────────────────
   es: {
-    appTitle: "Asistente Inteligente CAT",
-    appSubtitle: "EXC001 · OP1001 · Operaciones en Vivo",
-    navTelemetry: "Telemetría",
-    navEnvironment: "Análisis Amb.",
-    navTraining: "Capacitación",
-    safetyBannerTitle: "⚠ ALERTA DE SEGURIDAD ACTIVA",
-    seatbeltAlert: "Cinturón NO abrochado — ¡Abróchelo antes de operar!",
-    idlingAlert: (m) => `Ralentí excesivo: ${m} min detectados (umbral: 45 min).`,
-    playAudio: "🔊 Reproducir Alerta",
-    dismiss: "Cerrar",
+    appTitle:       "Asistente Inteligente CAT",
+    appSubtitle:    "EXC001 · OP1001 · Operaciones en Vivo",
+    navTasks:       "📋 Tareas",
+    navTelemetry:   "📊 Telemetría",
+    navSafety:      "⚠️ Seguridad y Proximidad",
+    navEnv:         "🌧️ Análisis Ambiental",
+    navTraining:    "🎓 Capacitación",
+    loading:        "Cargando datos…",
+    errorLoad:      "Error al cargar. Verifique el backend en el puerto 5000.",
+    errorPost:      "Solicitud fallida. Verifique la conexión al backend.",
+    taskTitle:      "Panel de Tareas Diarias",
+    taskSubtitle:   "Órdenes de trabajo programadas — 2025-05-02",
+    kpiTotal:       "Tareas Totales",
+    kpiCompleted:   "Completadas",
+    kpiRemaining:   "Restantes",
+    kpiNextPriority:"Siguiente Prioridad",
+    colTask:        "Tarea / Ubicación",
+    colCycles:      "Ciclos",
+    colTarget:      "Hora Límite",
+    colStatus:      "Estado",
+    colPriority:    "Prioridad",
+    colActions:     "Actualizar",
+    markComplete:   "✔ Completar",
+    markProgress:   "▶ Iniciar",
+    markPending:    "⏸ Pausar",
+    high:           "Alta",
+    normal:         "Normal",
+    inProgress:     "En Progreso",
+    pending:        "Pendiente",
+    completed:      "Completada",
+    cycleProgress:  (done, total) => `${done}/${total} ciclos`,
     telemetryTitle: "Telemetría en Vivo",
-    colTimestamp: "Hora",
-    colEngineHrs: "Horas Motor",
-    colFuel: "Combustible (L)",
-    colCycles: "Ciclos",
-    colIdle: "Ralentí (min)",
-    colSeatbelt: "Cinturón",
-    colAlert: "Alerta",
-    fastened: "Abrochado",
-    unfastened: "No Abrochado",
-    yes: "SÍ",
-    no: "NO",
-    kpiEngineHrs: "Horas Motor",
-    kpiFuelTotal: "Combustible Total",
-    kpiCycles: "Ciclos de Carga",
-    kpiAlerts: "Alertas de Seguridad",
-    envTitle: "Centro de Impacto Ambiental",
-    envSubtitle: "Ingrese las condiciones para obtener ETA, riesgo y orientación del operador.",
-    lblLoadCycles: "Ciclos de Carga",
-    lblFuel: "Combustible Estimado (L)",
-    lblWeather: "Severidad del Clima",
-    lblGround: "Estabilidad del Suelo",
-    lblTemp: "Temperatura Ambiente (°C)",
-    weatherOpts: ["0 — Despejado", "1 — Lluvia Ligera", "2 — Lluvia Fuerte", "3 — Tormenta"],
-    groundOpts: ["0 — Firme / Seco", "1 — Blando / Mojado", "2 — Suelto / Lodoso", "3 — Inestable / Rocoso"],
-    analyzeBtn: "Analizar Condiciones",
-    analyzing: "Analizando…",
-    resultETA: "ETA de Tarea Predicha",
-    resultRisk: "Nivel de Riesgo",
-    resultImpacts: "Impacto en la Máquina",
-    resultActions: "Próximos Pasos Recomendados",
-    minutes: "min",
-    trainingTitle: "Centro de Capacitación",
-    checklistTitle: "Lista Pre-Turno",
+    colTimestamp:   "Hora",
+    colEngineHrs:   "Horas Motor",
+    colFuel:        "Combustible (L)",
+    colLoadCycles:  "Ciclos de Carga",
+    colIdle:        "Ralentí (min)",
+    colSeatbelt:    "Cinturón",
+    colAlert:       "Alerta",
+    fastened:       "Abrochado",
+    unfastened:     "No Abrochado",
+    yes:            "SÍ",
+    no:             "NO",
+    kpiEngineHrs:   "Horas Motor",
+    kpiFuelTotal:   "Combustible Total",
+    kpiLoadCycles:  "Ciclos de Carga",
+    kpiAlerts:      "Alertas de Seguridad",
+    safetyTitle:         "Radar de Seguridad y Proximidad",
+    safetyBannerTitle:   "⚠ ALERTA DE SEGURIDAD ACTIVA",
+    seatbeltAlert:       "Cinturón NO abrochado — ¡Abróchelo antes de operar!",
+    idlingAlert:         (m) => `Ralentí excesivo: ${m} min (umbral: 45 min).`,
+    playAudio:           "🔊 Reproducir Alerta",
+    dismiss:             "Cerrar",
+    proximityTitle:      "Monitor de Proximidad en Vivo",
+    noHazards:           "No se detectaron peligros de proximidad activos.",
+    incidentTitle:       "Registrar Nuevo Incidente",
+    incidentType:        "Tipo de Incidente",
+    incidentSeverity:    "Severidad",
+    incidentLocation:    "Ubicación",
+    incidentNotes:       "Notas / Descripción",
+    incidentSubmit:      "Enviar Reporte de Incidente",
+    incidentSubmitting:  "Enviando…",
+    incidentSuccess:     "✅ Incidente registrado exitosamente.",
+    incidentHistoryTitle:"Historial de Incidentes",
+    incidentTypes:       ["Casi Accidente", "Falla de Equipo", "Violación de Seguridad", "Ambiental", "Lesión", "Daño a Propiedad"],
+    severities:          ["BAJO", "MODERADO", "ALTO", "CRÍTICO"],
+    zone:                "Zona",
+    hazardType:          "Peligro",
+    severity:            "Severidad",
+    distance:            "Distancia",
+    bearing:             "Dirección",
+    operator:            "Operador",
+    envTitle:       "Centro de Análisis Ambiental ML",
+    envSubtitle:    "Ingrese condiciones para obtener ETA, riesgo y orientación del operador.",
+    lblLoadCycles:  "Ciclos de Carga",
+    lblFuel:        "Combustible Estimado (L)",
+    lblWeather:     "Severidad del Clima",
+    lblGround:      "Estabilidad del Suelo",
+    lblTemp:        "Temperatura Ambiente (°C)",
+    weatherOpts:    ["0 — Despejado", "1 — Lluvia Ligera", "2 — Lluvia Fuerte", "3 — Tormenta"],
+    groundOpts:     ["0 — Firme / Seco", "1 — Blando / Mojado", "2 — Suelto / Lodoso", "3 — Inestable / Rocoso"],
+    analyzeBtn:     "Analizar Condiciones",
+    analyzing:      "Analizando…",
+    resultETA:      "ETA de Tarea Predicha",
+    resultRisk:     "Nivel de Riesgo",
+    resultImpacts:  "Impacto en la Máquina",
+    resultActions:  "Próximos Pasos Recomendados",
+    minutes:        "min",
+    trainingTitle:      "Centro de Capacitación y Simulación",
+    checklistTitle:     "Lista Pre-Turno",
     checklistItems: [
       "Inspeccionar líneas hidráulicas",
       "Verificar dientes del cucharón",
-      "Revisar aceite de motor y refrigerante",
+      "Revisar aceite y refrigerante",
       "Probar bocina, luces y alarma de retroceso",
       "Abrochar cinturón antes de arrancar",
       "Despejar radio de giro de 3 m",
       "Confirmar radio y comunicaciones",
       "Revisar tensión de orugas",
     ],
-    microTitle: "Tarjetas de Aprendizaje",
+    checkAll:           "¡Verificaciones completas — Seguro para operar! ✅",
+    microTitle:         "Tarjetas de Aprendizaje",
     cards: [
-      { icon: "🔄", title: "Zonas de Giro Seguras", tag: "Seguridad", body: "Verifique puntos ciegos antes de rotar. Mantenga zona de exclusión de 3 m alrededor de la máquina." },
-      { icon: "⛽", title: "Excavación Eficiente", tag: "Eficiencia", body: "Adapte el cucharón a la densidad del material. Los ciclos cortos reducen combustible un 18%." },
-      { icon: "🏔️", title: "Terreno Adverso", tag: "Terreno", body: "En pendientes >15°, baje el boom al estacionar. Active bloqueo de traslado en superficies mojadas." },
-      { icon: "🌡️", title: "Operación en Temperaturas Extremas", tag: "Clima", body: "Bajo 0°C: 10 min de ralentí. Sobre 35°C: revisar refrigerante cada 2 horas." },
+      { icon: "🔄", title: "Zonas de Giro Seguras",       tag: "Seguridad",  body: "Verifique puntos ciegos antes de rotar. Zona de exclusión de 3 m." },
+      { icon: "⛽", title: "Excavación Eficiente",         tag: "Eficiencia", body: "Adapte el cucharón al material. Ciclos cortos reducen combustible un 18%." },
+      { icon: "🏔️", title: "Terreno Adverso",             tag: "Terreno",    body: "En pendientes >15°, baje el boom al estacionar. Bloqueo de traslado en barro." },
+      { icon: "🌡️", title: "Temperaturas Extremas",       tag: "Clima",      body: "Bajo 0°C: 10 min de ralentí. Sobre 35°C: revisar refrigerante cada 2 horas." },
     ],
-    checkAll: "¡Todas las verificaciones completas — Seguro para operar! ✅",
-    loading: "Cargando datos…",
-    errorLoad: "Error al cargar. Verifique el backend en el puerto 5000.",
-    errorAnalyze: "Análisis fallido. Verifique la conexión al backend.",
+    simTitle:           "Simulador y Reserva de Instructor",
+    simScenarios: [
+      { id: "sim1", icon: "🏔️", title: "Simulación de Estabilización de Talud",  desc: "Excavación segura en terraplenes de 15°–30°. Incluye escenarios de alarma de inclinación." },
+      { id: "sim2", icon: "👷", title: "Respuesta a Proximidad de Peatones",       desc: "Ejercicio de tiempo de reacción ante detección de personal a 3 m y 5 m." },
+      { id: "sim3", icon: "⚡", title: "Evitación de Cables Aéreos",               desc: "Gestión de altura de boom cerca de cables activos. Procedimiento de apagado de emergencia." },
+      { id: "sim4", icon: "🌊", title: "Recuperación en Terreno Blando",           desc: "Protocolo de recuperación en terreno inundado. Pasos de extracción con bloqueo de oruga." },
+    ],
+    launchSim:          "Iniciar Simulación",
+    bookInstructor:     "Reservar Instructor",
+    simModalTitle:      "Lanzamiento de Simulación",
+    simModalBody:       (title) => `Iniciando: "${title}"\n\nEn producción esto abre el módulo VR/AR. Para este prototipo, los parámetros están precargados.`,
+    bookModalTitle:     "Reserva de Instructor",
+    bookName:           "Su Nombre",
+    bookDate:           "Fecha Preferida",
+    bookScenario:       "Escenario",
+    bookSubmit:         "Confirmar Reserva",
+    bookSuccess:        "✅ ¡Reserva confirmada! El instructor se comunicará en 2 horas.",
+    closeModal:         "Cerrar",
     footerText: "© 2025 Caterpillar Inc. · Asistente Inteligente · Prototipo",
   },
 
+  // ── HINDI ──────────────────────────────────────────────────────────────────
   hi: {
-    appTitle: "CAT स्मार्ट ऑपरेटर सहायक",
-    appSubtitle: "EXC001 · OP1001 · लाइव ऑपरेशन",
-    navTelemetry: "टेलीमेट्री",
-    navEnvironment: "पर्यावरण विश्लेषण",
-    navTraining: "प्रशिक्षण",
-    safetyBannerTitle: "⚠ सक्रिय सुरक्षा चेतावनी",
-    seatbeltAlert: "सीटबेल्ट नहीं लगी — ऑपरेट करने से पहले तुरंत लगाएं!",
-    idlingAlert: (m) => `अत्यधिक आइडलिंग: ${m} मिनट (सीमा: 45 मिनट)।`,
-    playAudio: "🔊 वॉयस अलर्ट चलाएं",
-    dismiss: "बंद करें",
+    appTitle:       "CAT स्मार्ट ऑपरेटर सहायक",
+    appSubtitle:    "EXC001 · OP1001 · लाइव ऑपरेशन",
+    navTasks:       "📋 टास्क",
+    navTelemetry:   "📊 टेलीमेट्री",
+    navSafety:      "⚠️ सुरक्षा और निकटता",
+    navEnv:         "🌧️ पर्यावरण विश्लेषण",
+    navTraining:    "🎓 प्रशिक्षण",
+    loading:        "डेटा लोड हो रहा है…",
+    errorLoad:      "लोड नहीं हुआ। पोर्ट 5000 पर बैकएंड चला रहे हैं?",
+    errorPost:      "अनुरोध विफल। बैकएंड कनेक्शन जांचें।",
+    taskTitle:      "दैनिक टास्क डैशबोर्ड",
+    taskSubtitle:   "आज के निर्धारित कार्य — 2025-05-02",
+    kpiTotal:       "कुल टास्क",
+    kpiCompleted:   "पूर्ण",
+    kpiRemaining:   "शेष",
+    kpiNextPriority:"अगली प्राथमिकता",
+    colTask:        "टास्क / स्थान",
+    colCycles:      "साइकिल",
+    colTarget:      "लक्ष्य समय",
+    colStatus:      "स्थिति",
+    colPriority:    "प्राथमिकता",
+    colActions:     "अपडेट",
+    markComplete:   "✔ पूर्ण करें",
+    markProgress:   "▶ शुरू करें",
+    markPending:    "⏸ रोकें",
+    high:           "उच्च",
+    normal:         "सामान्य",
+    inProgress:     "प्रगति में",
+    pending:        "प्रतीक्षारत",
+    completed:      "पूर्ण",
+    cycleProgress:  (done, total) => `${done}/${total} साइकिल`,
     telemetryTitle: "लाइव टेलीमेट्री फीड",
-    colTimestamp: "समय",
-    colEngineHrs: "इंजन घंटे",
-    colFuel: "ईंधन (L)",
-    colCycles: "लोड साइकिल",
-    colIdle: "आइडल (मिनट)",
-    colSeatbelt: "सीटबेल्ट",
-    colAlert: "अलर्ट",
-    fastened: "लगी है",
-    unfastened: "नहीं लगी",
-    yes: "हाँ",
-    no: "नहीं",
-    kpiEngineHrs: "इंजन घंटे",
-    kpiFuelTotal: "कुल ईंधन",
-    kpiCycles: "लोड साइकिल",
-    kpiAlerts: "सुरक्षा अलर्ट",
-    envTitle: "पर्यावरण प्रभाव और एक्शन सेंटर",
-    envSubtitle: "ऑपरेटिंग कंडीशन दर्ज करें — ML आधारित ETA, जोखिम और मार्गदर्शन पाएं।",
-    lblLoadCycles: "लोड साइकिल",
-    lblFuel: "अनुमानित ईंधन (L)",
-    lblWeather: "मौसम गंभीरता",
-    lblGround: "भूमि स्थिरता",
-    lblTemp: "परिवेश तापमान (°C)",
-    weatherOpts: ["0 — साफ", "1 — हल्की बारिश", "2 — भारी बारिश", "3 — तूफान"],
-    groundOpts: ["0 — ठोस / सूखा", "1 — मुलायम / गीला", "2 — ढीला / कीचड़", "3 — अस्थिर / चट्टानी"],
-    analyzeBtn: "स्थिति का विश्लेषण करें",
-    analyzing: "विश्लेषण हो रहा है…",
-    resultETA: "अनुमानित टास्क ETA",
-    resultRisk: "सुरक्षा जोखिम स्तर",
-    resultImpacts: "मशीन सीमा प्रभाव",
-    resultActions: "अनुशंसित अगले कदम",
-    minutes: "मिनट",
-    trainingTitle: "ऑपरेटर प्रशिक्षण केंद्र",
-    checklistTitle: "प्री-शिफ्ट सुरक्षा चेकलिस्ट",
+    colTimestamp:   "समय",
+    colEngineHrs:   "इंजन घंटे",
+    colFuel:        "ईंधन (L)",
+    colLoadCycles:  "लोड साइकिल",
+    colIdle:        "आइडल (मिनट)",
+    colSeatbelt:    "सीटबेल्ट",
+    colAlert:       "अलर्ट",
+    fastened:       "लगी है",
+    unfastened:     "नहीं लगी",
+    yes:            "हाँ",
+    no:             "नहीं",
+    kpiEngineHrs:   "इंजन घंटे",
+    kpiFuelTotal:   "कुल ईंधन",
+    kpiLoadCycles:  "लोड साइकिल",
+    kpiAlerts:      "सुरक्षा अलर्ट",
+    safetyTitle:         "सुरक्षा और निकटता रडार",
+    safetyBannerTitle:   "⚠ सक्रिय सुरक्षा चेतावनी",
+    seatbeltAlert:       "सीटबेल्ट नहीं लगी — ऑपरेट करने से पहले तुरंत लगाएं!",
+    idlingAlert:         (m) => `अत्यधिक आइडलिंग: ${m} मिनट (सीमा: 45 मिनट)।`,
+    playAudio:           "🔊 वॉयस अलर्ट चलाएं",
+    dismiss:             "बंद करें",
+    proximityTitle:      "लाइव निकटता खतरा मॉनिटर",
+    noHazards:           "कोई सक्रिय निकटता खतरा नहीं मिला।",
+    incidentTitle:       "नई घटना दर्ज करें",
+    incidentType:        "घटना का प्रकार",
+    incidentSeverity:    "गंभीरता",
+    incidentLocation:    "स्थान",
+    incidentNotes:       "नोट्स / विवरण",
+    incidentSubmit:      "घटना रिपोर्ट सबमिट करें",
+    incidentSubmitting:  "सबमिट हो रहा है…",
+    incidentSuccess:     "✅ घटना सफलतापूर्वक दर्ज की गई।",
+    incidentHistoryTitle:"घटना इतिहास",
+    incidentTypes:       ["नियर मिस", "उपकरण खराबी", "सुरक्षा उल्लंघन", "पर्यावरण", "चोट", "संपत्ति क्षति"],
+    severities:          ["कम", "मध्यम", "उच्च", "गंभीर"],
+    zone:                "ज़ोन",
+    hazardType:          "खतरा",
+    severity:            "गंभीरता",
+    distance:            "दूरी",
+    bearing:             "दिशा",
+    operator:            "ऑपरेटर",
+    envTitle:       "पर्यावरण प्रभाव और ML एक्शन सेंटर",
+    envSubtitle:    "ऑपरेटिंग कंडीशन दर्ज करें — ML आधारित ETA, जोखिम और मार्गदर्शन पाएं।",
+    lblLoadCycles:  "लोड साइकिल",
+    lblFuel:        "अनुमानित ईंधन (L)",
+    lblWeather:     "मौसम गंभीरता",
+    lblGround:      "भूमि स्थिरता",
+    lblTemp:        "परिवेश तापमान (°C)",
+    weatherOpts:    ["0 — साफ", "1 — हल्की बारिश", "2 — भारी बारिश", "3 — तूफान"],
+    groundOpts:     ["0 — ठोस / सूखा", "1 — मुलायम / गीला", "2 — ढीला / कीचड़", "3 — अस्थिर / चट्टानी"],
+    analyzeBtn:     "स्थिति का विश्लेषण करें",
+    analyzing:      "विश्लेषण हो रहा है…",
+    resultETA:      "अनुमानित टास्क ETA",
+    resultRisk:     "सुरक्षा जोखिम स्तर",
+    resultImpacts:  "मशीन सीमा प्रभाव",
+    resultActions:  "अनुशंसित अगले कदम",
+    minutes:        "मिनट",
+    trainingTitle:      "ऑपरेटर प्रशिक्षण और सिमुलेशन केंद्र",
+    checklistTitle:     "प्री-शिफ्ट सुरक्षा चेकलिस्ट",
     checklistItems: [
       "हाइड्रोलिक लाइनें जांचें",
       "बकेट टीथ की जांच करें",
@@ -207,17 +380,32 @@ const DICT = {
       "रेडियो संचार की जांच करें",
       "ट्रैक टेंशन और अंडरकैरिज जांचें",
     ],
-    microTitle: "माइक्रो-लर्निंग कार्ड",
+    checkAll:           "सभी जांच पूरी — ऑपरेट करना सुरक्षित है! ✅",
+    microTitle:         "माइक्रो-लर्निंग कार्ड",
     cards: [
-      { icon: "🔄", title: "सुरक्षित स्विंग ज़ोन", tag: "सुरक्षा", body: "घुमाने से पहले ब्लाइंड स्पॉट जांचें। मशीन के चारों ओर 3 मीटर का एक्सक्लूज़न ज़ोन बनाए रखें।" },
-      { icon: "⛽", title: "ईंधन-कुशल खुदाई", tag: "दक्षता", body: "बकेट साइज़ सामग्री के अनुसार चुनें। छोटे चक्र ईंधन 18% बचाते हैं।" },
-      { icon: "🏔️", title: "प्रतिकूल भूमि प्रोटोकॉल", tag: "भूमि", body: "15° से अधिक ढलान पर पार्किंग करते समय बूम नीचे करें। गीली सतह पर ट्रैवल लॉक लगाएं।" },
-      { icon: "🌡️", title: "अत्यधिक तापमान ऑपरेशन", tag: "जलवायु", body: "0°C से नीचे: 10 मिनट वार्म-अप आइडल। 35°C से ऊपर: हर 2 घंटे कूलेंट जांचें।" },
+      { icon: "🔄", title: "सुरक्षित स्विंग ज़ोन",       tag: "सुरक्षा",  body: "घुमाने से पहले ब्लाइंड स्पॉट जांचें। 3 मीटर एक्सक्लूज़न ज़ोन बनाए रखें।" },
+      { icon: "⛽", title: "ईंधन-कुशल खुदाई",            tag: "दक्षता",   body: "बकेट साइज़ सामग्री के अनुसार चुनें। छोटे चक्र ईंधन 18% बचाते हैं।" },
+      { icon: "🏔️", title: "प्रतिकूल भूमि प्रोटोकॉल",   tag: "भूमि",     body: "15° से अधिक ढलान पर बूम नीचे करें। गीली सतह पर ट्रैवल लॉक लगाएं।" },
+      { icon: "🌡️", title: "अत्यधिक तापमान ऑपरेशन",     tag: "जलवायु",   body: "0°C से नीचे: 10 मिनट वार्म-अप। 35°C से ऊपर: हर 2 घंटे कूलेंट जांचें।" },
     ],
-    checkAll: "सभी जांच पूरी — ऑपरेट करना सुरक्षित है! ✅",
-    loading: "डेटा लोड हो रहा है…",
-    errorLoad: "लोड नहीं हुआ। पोर्ट 5000 पर बैकएंड चला रहे हैं?",
-    errorAnalyze: "विश्लेषण विफल। बैकएंड कनेक्शन जांचें।",
+    simTitle:           "सेफ्टी सिमुलेटर और इंस्ट्रक्टर बुकिंग",
+    simScenarios: [
+      { id: "sim1", icon: "🏔️", title: "स्लोप स्टेबिलाइज़ेशन सिमुलेशन",   desc: "15°–30° तटबंध पर सुरक्षित खुदाई। टिल्ट-अलार्म परिदृश्य शामिल।" },
+      { id: "sim2", icon: "👷", title: "पैदल यात्री निकटता प्रतिक्रिया",    desc: "3 मीटर और 5 मीटर ज़ोन में कर्मियों का पता लगाने पर प्रतिक्रिया अभ्यास।" },
+      { id: "sim3", icon: "⚡", title: "ओवरहेड केबल से बचाव",               desc: "लाइव केबल के पास बूम ऊंचाई प्रबंधन। आपातकालीन शटडाउन प्रक्रिया।" },
+      { id: "sim4", icon: "🌊", title: "मुलायम भूमि पुनर्प्राप्ति",          desc: "जलभराव वाले क्षेत्र पर मशीन रिकवरी प्रोटोकॉल। ट्रैक-लॉक निष्कर्षण।" },
+    ],
+    launchSim:          "सिमुलेशन शुरू करें",
+    bookInstructor:     "इंस्ट्रक्टर बुक करें",
+    simModalTitle:      "सिमुलेशन लॉन्च",
+    simModalBody:       (title) => `लॉन्च हो रहा है: "${title}"\n\nप्रोडक्शन में यह VR/AR मॉड्यूल खोलता है। इस प्रोटोटाइप के लिए परिदृश्य पैरामीटर प्रीलोड किए गए हैं।`,
+    bookModalTitle:     "इंस्ट्रक्टर बुकिंग",
+    bookName:           "आपका नाम",
+    bookDate:           "पसंदीदा तारीख",
+    bookScenario:       "परिदृश्य",
+    bookSubmit:         "बुकिंग की पुष्टि करें",
+    bookSuccess:        "✅ बुकिंग की पुष्टि हुई! इंस्ट्रक्टर 2 घंटे में संपर्क करेगा।",
+    closeModal:         "बंद करें",
     footerText: "© 2025 Caterpillar Inc. · स्मार्ट ऑपरेटर सहायक · हैकाथॉन प्रोटोटाइप",
   },
 };
@@ -225,9 +413,9 @@ const DICT = {
 const VOICE_LANG = { en: "en-US", es: "es-ES", hi: "hi-IN" };
 const API = "http://localhost:5000/api";
 
-// ---------------------------------------------------------------------------
-// Utility
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// UTILITIES
+// ===========================================================================
 function speak(text, lang) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
@@ -237,31 +425,14 @@ function speak(text, lang) {
   window.speechSynthesis.speak(u);
 }
 
-// ---------------------------------------------------------------------------
-// Primitive components
-// ---------------------------------------------------------------------------
-function Badge({ ok, labelOk, labelBad }) {
+// ===========================================================================
+// PRIMITIVE COMPONENTS
+// ===========================================================================
+function Panel({ children, className = "" }) {
   return (
-    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-      ok ? "bg-green-900 text-green-300" : "bg-red-900 text-red-300"
-    }`}>
-      {ok ? labelOk : labelBad}
-    </span>
-  );
-}
-
-function RiskBadge({ level }) {
-  const styles = [
-    "bg-green-900 text-green-300 border-green-700",
-    "bg-yellow-900 text-yellow-300 border-yellow-700",
-    "bg-red-900 text-red-300 border-red-700",
-  ];
-  const labels = ["LOW — OPTIMAL", "MODERATE — CAUTION", "CRITICAL — HIGH RISK"];
-  const icons  = ["✅", "⚠️", "🚨"];
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold border ${styles[level]}`}>
-      {icons[level]} {labels[level]}
-    </span>
+    <div className={`bg-[#18181c] border border-slate-700 rounded-xl p-5 ${className}`}>
+      {children}
+    </div>
   );
 }
 
@@ -273,41 +444,62 @@ function SectionTitle({ icon, title }) {
   );
 }
 
-function Panel({ children, className = "" }) {
+function KPICard({ label, value, unit, color }) {
   return (
-    <div className={`bg-[#18181c] border border-slate-700 rounded-xl p-5 ${className}`}>
-      {children}
-    </div>
+    <Panel>
+      <p className="text-slate-500 text-xs mb-1">{label}</p>
+      <p className={`text-3xl font-black ${color}`}>{value}</p>
+      <p className="text-slate-600 text-xs mt-0.5">{unit}</p>
+    </Panel>
   );
 }
 
-function InputRow({ label, children }) {
+function StatusPill({ status, t }) {
+  const map = {
+    "In Progress": "bg-blue-900 text-blue-300",
+    "Pending":     "bg-slate-700 text-slate-300",
+    "Completed":   "bg-green-900 text-green-300",
+  };
+  const label = status === "In Progress" ? t.inProgress
+              : status === "Pending"     ? t.pending
+              : t.completed;
   return (
-    <div>
-      <label className="block text-slate-300 text-sm font-medium mb-1.5">{label}</label>
-      {children}
-    </div>
+    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${map[status] || "bg-slate-700 text-slate-300"}`}>
+      {label}
+    </span>
   );
 }
 
-function NumInput({ value, onChange, min, max, step = 1 }) {
+function SeverityPill({ severity }) {
+  const map = {
+    LOW:      "bg-green-900 text-green-300",
+    MODERATE: "bg-yellow-900 text-yellow-300",
+    HIGH:     "bg-orange-900 text-orange-300",
+    CRITICAL: "bg-red-900 text-red-300",
+  };
   return (
-    <input
-      type="number" min={min} max={max} step={step} value={value}
-      onChange={e => onChange(Number(e.target.value))}
-      className="w-full bg-[#0d0d0f] border border-slate-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FFCD11] transition-colors"
-    />
+    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${map[severity] || "bg-slate-700 text-slate-300"}`}>
+      {severity}
+    </span>
   );
 }
 
-function SelectInput({ value, onChange, options }) {
+function Badge({ ok, labelOk, labelBad }) {
   return (
-    <select
-      value={value} onChange={e => onChange(Number(e.target.value))}
-      className="w-full bg-[#0d0d0f] border border-slate-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FFCD11] transition-colors"
-    >
-      {options.map((o, i) => <option key={i} value={i}>{o}</option>)}
-    </select>
+    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${ok ? "bg-green-900 text-green-300" : "bg-red-900 text-red-300"}`}>
+      {ok ? labelOk : labelBad}
+    </span>
+  );
+}
+
+function RiskBadge({ level }) {
+  const styles = ["bg-green-900 text-green-300 border-green-700", "bg-yellow-900 text-yellow-300 border-yellow-700", "bg-red-900 text-red-300 border-red-700"];
+  const labels = ["LOW — OPTIMAL", "MODERATE — CAUTION", "CRITICAL — HIGH RISK"];
+  const icons  = ["✅", "⚠️", "🚨"];
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold border ${styles[level]}`}>
+      {icons[level]} {labels[level]}
+    </span>
   );
 }
 
@@ -321,67 +513,124 @@ function LoadingSpinner({ text }) {
 }
 
 function ErrorBlock({ text }) {
+  return <div className="m-4 p-4 bg-red-950 border border-red-700 rounded-xl text-red-300 text-sm">⚠ {text}</div>;
+}
+
+function InputRow({ label, children }) {
   return (
-    <div className="m-4 p-4 bg-red-950 border border-red-700 rounded-xl text-red-300 text-sm">⚠ {text}</div>
+    <div>
+      <label className="block text-slate-300 text-sm font-medium mb-1.5">{label}</label>
+      {children}
+    </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// NavBar
-// ---------------------------------------------------------------------------
+function NumInput({ value, onChange, min, max, step = 1 }) {
+  return (
+    <input type="number" min={min} max={max} step={step} value={value}
+      onChange={e => onChange(Number(e.target.value))}
+      className="w-full bg-[#0d0d0f] border border-slate-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FFCD11] transition-colors" />
+  );
+}
+
+function SelectInput({ value, onChange, options, raw = false }) {
+  return (
+    <select value={value} onChange={e => onChange(raw ? e.target.value : Number(e.target.value))}
+      className="w-full bg-[#0d0d0f] border border-slate-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FFCD11] transition-colors">
+      {options.map((o, i) => <option key={i} value={raw ? o : i}>{o}</option>)}
+    </select>
+  );
+}
+
+function TextArea({ value, onChange, placeholder, rows = 3 }) {
+  return (
+    <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows}
+      className="w-full bg-[#0d0d0f] border border-slate-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FFCD11] transition-colors resize-none" />
+  );
+}
+
+// Generic modal overlay
+function Modal({ open, onClose, title, children }) {
+  const ref = useRef();
+  useEffect(() => {
+    if (!open) return;
+    const handler = e => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div ref={ref} className="bg-[#18181c] border border-slate-600 rounded-2xl w-full max-w-lg shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+          <h3 className="text-[#FFCD11] font-bold text-lg">{title}</h3>
+          <button onClick={onClose} className="text-slate-500 hover:text-white text-2xl leading-none">✕</button>
+        </div>
+        <div className="px-6 py-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+// ===========================================================================
+// NAVBAR
+// ===========================================================================
 function NavBar({ t, lang, setLang, tab, setTab }) {
   const tabs = [
-    { id: "telemetry",   label: t.navTelemetry },
-    { id: "environment", label: t.navEnvironment },
-    { id: "training",    label: t.navTraining },
+    { id: "tasks",    label: t.navTasks },
+    { id: "telemetry",label: t.navTelemetry },
+    { id: "safety",   label: t.navSafety },
+    { id: "env",      label: t.navEnv },
+    { id: "training", label: t.navTraining },
   ];
   return (
-    <nav className="bg-[#18181c] border-b border-[#FFCD11]/30 px-4 py-3 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-20">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-[#FFCD11] rounded-lg flex items-center justify-center font-black text-black text-base select-none shadow-lg">
-          CAT
+    <nav className="bg-[#18181c] border-b border-[#FFCD11]/30 px-4 py-3 sticky top-0 z-20">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {/* Logo */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-[#FFCD11] rounded-lg flex items-center justify-center font-black text-black text-base select-none shadow-lg">CAT</div>
+          <div>
+            <h1 className="text-[#FFCD11] font-bold text-lg leading-tight">{t.appTitle}</h1>
+            <p className="text-slate-500 text-xs">{t.appSubtitle}</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-[#FFCD11] font-bold text-lg leading-tight">{t.appTitle}</h1>
-          <p className="text-slate-500 text-xs">{t.appSubtitle}</p>
+        {/* Tabs */}
+        <div className="flex gap-1 flex-wrap">
+          {tabs.map(tb => (
+            <button key={tb.id} onClick={() => setTab(tb.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
+                tab === tb.id ? "bg-[#FFCD11] text-black" : "text-slate-300 hover:bg-slate-800"
+              }`}>
+              {tb.label}
+            </button>
+          ))}
         </div>
-      </div>
-      <div className="flex gap-1 flex-wrap">
-        {tabs.map(tb => (
-          <button key={tb.id} onClick={() => setTab(tb.id)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              tab === tb.id ? "bg-[#FFCD11] text-black" : "text-slate-300 hover:bg-slate-800"
-            }`}>
-            {tb.label}
-          </button>
-        ))}
-      </div>
-      <div className="flex gap-1">
-        {["en", "es", "hi"].map(l => (
-          <button key={l} onClick={() => setLang(l)}
-            className={`px-2.5 py-1 rounded text-xs font-bold uppercase transition-colors ${
-              lang === l ? "bg-[#FFCD11] text-black" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
-            }`}>
-            {l}
-          </button>
-        ))}
+        {/* Lang */}
+        <div className="flex gap-1">
+          {["en", "es", "hi"].map(l => (
+            <button key={l} onClick={() => setLang(l)}
+              className={`px-2.5 py-1 rounded text-xs font-bold uppercase transition-colors ${
+                lang === l ? "bg-[#FFCD11] text-black" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+              }`}>
+              {l}
+            </button>
+          ))}
+        </div>
       </div>
     </nav>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Safety Banner
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// SAFETY BANNER (global — shown across all tabs when anomalies active)
+// ===========================================================================
 function SafetyBanner({ t, lang, anomalies }) {
   const [open, setOpen] = useState(true);
   useEffect(() => setOpen(true), [anomalies]);
-
   if (!anomalies?.length || !open) return null;
 
   const seatbelt = anomalies.filter(a => a.flags.includes("SEATBELT_UNFASTENED"));
   const idling   = anomalies.filter(a => a.flags.includes("HIGH_IDLING"));
-
   const alertText = [
     seatbelt.length ? t.seatbeltAlert : "",
     idling.length   ? t.idlingAlert(idling[0].idlingTime) : "",
@@ -401,18 +650,142 @@ function SafetyBanner({ t, lang, anomalies }) {
           className="bg-[#FFCD11] text-black text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-yellow-300 transition-colors">
           {t.playAudio}
         </button>
-        <button onClick={() => setOpen(false)}
-          className="text-slate-500 hover:text-white text-xl leading-none transition-colors" title={t.dismiss}>
-          ✕
-        </button>
+        <button onClick={() => setOpen(false)} className="text-slate-500 hover:text-white text-xl leading-none" title={t.dismiss}>✕</button>
       </div>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// View 1 — Telemetry
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// TAB 1 — DAILY TASK DASHBOARD
+// ===========================================================================
+function TaskView({ t }) {
+  const [tasks, setTasks]     = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`${API}/tasks`)
+      .then(r => r.json())
+      .then(d => { setTasks(d.data || []); setLoading(false); })
+      .catch(() => { setError(true); setLoading(false); });
+  }, []);
+
+  const updateStatus = async (id, status) => {
+    try {
+      const res  = await fetch(`${API}/tasks/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json();
+      if (data.status === "ok") setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
+    } catch { /* silent — optimistic UI not applied */ }
+  };
+
+  if (loading) return <LoadingSpinner text={t.loading} />;
+  if (error)   return <ErrorBlock text={t.errorLoad} />;
+
+  const total     = tasks.length;
+  const completed = tasks.filter(t => t.status === "Completed").length;
+  const remaining = tasks.filter(t => t.status !== "Completed").length;
+  const nextHigh  = tasks.find(t => t.priority === "High" && t.status !== "Completed");
+
+  return (
+    <div className="p-4 sm:p-6">
+      <SectionTitle icon="📋" title={t.taskTitle} />
+      <p className="text-slate-400 text-xs mb-5">{t.taskSubtitle}</p>
+
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <KPICard label={t.kpiTotal}        value={total}        unit="tasks"  color="text-[#FFCD11]" />
+        <KPICard label={t.kpiCompleted}    value={completed}    unit="done"   color="text-green-400" />
+        <KPICard label={t.kpiRemaining}    value={remaining}    unit="left"   color="text-orange-400" />
+        <KPICard label={t.kpiNextPriority} value={nextHigh ? nextHigh.target_completion_time : "—"} unit={nextHigh ? nextHigh.title.split("—")[0].trim() : "none"} color="text-red-400" />
+      </div>
+
+      {/* Task cards */}
+      <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        {tasks.map(task => {
+          const pct = task.assigned_cycles > 0
+            ? Math.round((task.completed_cycles / task.assigned_cycles) * 100) : 0;
+          return (
+            <Panel key={task.id} className={`flex flex-col gap-3 ${task.priority === "High" ? "border-orange-800" : ""}`}>
+              {/* Header */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-semibold text-sm leading-tight">{task.title}</p>
+                  <p className="text-slate-500 text-xs mt-0.5 flex items-center gap-1">
+                    <span>📍</span>{task.location}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                  <StatusPill status={task.status} t={t} />
+                  <span className={`text-xs font-bold ${task.priority === "High" ? "text-orange-400" : "text-slate-500"}`}>
+                    {task.priority === "High" ? `🔥 ${t.high}` : t.normal}
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div>
+                <div className="flex justify-between text-xs text-slate-500 mb-1">
+                  <span>{t.cycleProgress(task.completed_cycles, task.assigned_cycles)}</span>
+                  <span>{pct}%</span>
+                </div>
+                <div className="bg-slate-700 rounded-full h-2">
+                  <div className={`h-2 rounded-full transition-all duration-500 ${pct === 100 ? "bg-green-400" : "bg-[#FFCD11]"}`}
+                    style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+
+              {/* Target time + notes */}
+              <div className="text-xs text-slate-400 flex justify-between">
+                <span>🕐 Target: <span className="text-white font-medium">{task.target_completion_time}</span></span>
+                <span className="text-slate-600">#{task.id}</span>
+              </div>
+              {task.notes && (
+                <p className="text-xs text-slate-500 bg-slate-900 rounded-lg px-3 py-2 border border-slate-800">
+                  📝 {task.notes}
+                </p>
+              )}
+
+              {/* Action buttons */}
+              {task.status !== "Completed" && (
+                <div className="flex gap-2 mt-auto pt-1">
+                  {task.status === "Pending" && (
+                    <button onClick={() => updateStatus(task.id, "In Progress")}
+                      className="flex-1 bg-blue-900 hover:bg-blue-800 text-blue-200 text-xs font-semibold py-1.5 rounded-lg transition-colors">
+                      {t.markProgress}
+                    </button>
+                  )}
+                  {task.status === "In Progress" && (
+                    <button onClick={() => updateStatus(task.id, "Pending")}
+                      className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-semibold py-1.5 rounded-lg transition-colors">
+                      {t.markPending}
+                    </button>
+                  )}
+                  <button onClick={() => updateStatus(task.id, "Completed")}
+                    className="flex-1 bg-green-900 hover:bg-green-800 text-green-200 text-xs font-semibold py-1.5 rounded-lg transition-colors">
+                    {t.markComplete}
+                  </button>
+                </div>
+              )}
+              {task.status === "Completed" && (
+                <div className="text-center text-green-400 text-xs font-semibold pt-1">✅ {t.completed}</div>
+              )}
+            </Panel>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ===========================================================================
+// TAB 2 — TELEMETRY & ANOMALY LOG
+// ===========================================================================
 function TelemetryView({ t, telemetry, loading, error }) {
   if (loading) return <LoadingSpinner text={t.loading} />;
   if (error)   return <ErrorBlock text={t.errorLoad} />;
@@ -422,34 +795,20 @@ function TelemetryView({ t, telemetry, loading, error }) {
   const alertCount  = telemetry.filter(r => r.safetyAlert).length;
   const lastHrs     = telemetry[telemetry.length - 1]?.engineHours ?? "—";
 
-  const kpis = [
-    { label: t.kpiEngineHrs, value: lastHrs,      unit: "hrs",   color: "text-[#FFCD11]" },
-    { label: t.kpiFuelTotal, value: totalFuel,    unit: "L",     color: "text-blue-400"  },
-    { label: t.kpiCycles,    value: totalCycles,  unit: "total", color: "text-green-400" },
-    { label: t.kpiAlerts,    value: alertCount,   unit: "events",color: "text-red-400"   },
-  ];
-
   return (
     <div className="p-4 sm:p-6">
-      <SectionTitle icon="📡" title={t.telemetryTitle} />
-
-      {/* KPI strip */}
+      <SectionTitle icon="📊" title={t.telemetryTitle} />
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-        {kpis.map(k => (
-          <Panel key={k.label}>
-            <p className="text-slate-500 text-xs mb-1">{k.label}</p>
-            <p className={`text-3xl font-black ${k.color}`}>{k.value}</p>
-            <p className="text-slate-600 text-xs mt-0.5">{k.unit}</p>
-          </Panel>
-        ))}
+        <KPICard label={t.kpiEngineHrs}  value={lastHrs}      unit="hrs"    color="text-[#FFCD11]" />
+        <KPICard label={t.kpiFuelTotal}  value={totalFuel}    unit="L"      color="text-blue-400"  />
+        <KPICard label={t.kpiLoadCycles} value={totalCycles}  unit="total"  color="text-green-400" />
+        <KPICard label={t.kpiAlerts}     value={alertCount}   unit="events" color="text-red-400"   />
       </div>
-
-      {/* Table */}
       <div className="overflow-x-auto rounded-xl border border-slate-700">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-900 text-[#FFCD11] text-left">
-              {[t.colTimestamp, t.colEngineHrs, t.colFuel, t.colCycles, t.colIdle, t.colSeatbelt, t.colAlert].map(h => (
+              {[t.colTimestamp, t.colEngineHrs, t.colFuel, t.colLoadCycles, t.colIdle, t.colSeatbelt, t.colAlert].map(h => (
                 <th key={h} className="px-4 py-3 font-semibold whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -481,13 +840,213 @@ function TelemetryView({ t, telemetry, loading, error }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// View 2 — Environmental Impact & Action Center
-// ---------------------------------------------------------------------------
-function EnvironmentView({ t }) {
-  const [form, setForm] = useState({
-    load_cycles: 8, estimated_fuel: 5, weather_severity: 0, ground_stability: 0, ambient_temp: 22,
-  });
+// ===========================================================================
+// TAB 3 — SAFETY & PROXIMITY RADAR
+// ===========================================================================
+function SafetyView({ t, lang, anomalies }) {
+  const [proximity, setProximity]   = useState([]);
+  const [incidents, setIncidents]   = useState([]);
+  const [proxLoading, setProxLoad]  = useState(true);
+  const [incLoad, setIncLoad]       = useState(true);
+  const [error, setError]           = useState(false);
+
+  // Incident form state
+  const [form, setForm] = useState({ incident_type: "", severity: "MODERATE", location: "", notes: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitMsg, setSubmitMsg]   = useState("");
+
+  const setF = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const fetchProximity = useCallback(() => {
+    setProxLoad(true);
+    fetch(`${API}/proximity`)
+      .then(r => r.json())
+      .then(d => { setProximity(d.data || []); setProxLoad(false); })
+      .catch(() => { setError(true); setProxLoad(false); });
+  }, []);
+
+  const fetchIncidents = useCallback(() => {
+    setIncLoad(true);
+    fetch(`${API}/incidents`)
+      .then(r => r.json())
+      .then(d => { setIncidents(d.data || []); setIncLoad(false); })
+      .catch(() => setIncLoad(false));
+  }, []);
+
+  useEffect(() => { fetchProximity(); fetchIncidents(); }, [fetchProximity, fetchIncidents]);
+
+  const handleSubmitIncident = async () => {
+    if (!form.incident_type || !form.location || !form.notes) return;
+    setSubmitting(true); setSubmitMsg("");
+    try {
+      const res  = await fetch(`${API}/incidents`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (data.status === "ok") {
+        setSubmitMsg(t.incidentSuccess);
+        setForm({ incident_type: "", severity: "MODERATE", location: "", notes: "" });
+        fetchIncidents();
+      } else {
+        setSubmitMsg("❌ " + (data.errors?.join(", ") || t.errorPost));
+      }
+    } catch {
+      setSubmitMsg("❌ " + t.errorPost);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const activeProx = proximity.filter(p => p.active);
+
+  const severityBorder = { CRITICAL: "border-red-600", HIGH: "border-orange-600", MODERATE: "border-yellow-600", LOW: "border-green-700" };
+  const severityBg     = { CRITICAL: "bg-red-950/50",  HIGH: "bg-orange-950/40", MODERATE: "bg-yellow-950/30", LOW: "bg-green-950/30" };
+
+  return (
+    <div className="p-4 sm:p-6 space-y-8">
+      <SectionTitle icon="⚠️" title={t.safetyTitle} />
+
+      {/* ── Safety violations banner (inline here too) ── */}
+      {anomalies?.length > 0 && (
+        <Panel className="border-red-700 bg-red-950/40">
+          <p className="text-red-400 font-bold text-sm mb-2">{t.safetyBannerTitle}</p>
+          <ul className="space-y-1">
+            {anomalies.filter(a => a.flags.includes("SEATBELT_UNFASTENED")).length > 0 && (
+              <li className="text-white text-sm">🚨 {t.seatbeltAlert}</li>
+            )}
+            {anomalies.filter(a => a.flags.includes("HIGH_IDLING")).map((a, i) => (
+              <li key={i} className="text-white text-sm">⏱ {t.idlingAlert(a.idlingTime)}</li>
+            ))}
+          </ul>
+          <button onClick={() => speak(
+            [t.seatbeltAlert, t.idlingAlert(anomalies.find(a=>a.flags.includes("HIGH_IDLING"))?.idlingTime||0)].join(". "), lang)}
+            className="mt-3 bg-[#FFCD11] text-black text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-yellow-300 transition-colors">
+            {t.playAudio}
+          </button>
+        </Panel>
+      )}
+
+      {/* ── Proximity Hazard Monitor ── */}
+      <div>
+        <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+          <span className="text-[#FFCD11]">📡</span>{t.proximityTitle}
+          {activeProx.length > 0 && (
+            <span className="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
+              {activeProx.length} ACTIVE
+            </span>
+          )}
+        </h3>
+        {proxLoading ? <LoadingSpinner text={t.loading} /> : (
+          proximity.length === 0 ? (
+            <Panel><p className="text-slate-500 text-sm text-center py-4">{t.noHazards}</p></Panel>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-4">
+              {proximity.map(h => (
+                <div key={h.id}
+                  className={`rounded-xl border-2 p-4 ${severityBorder[h.severity]} ${severityBg[h.severity]} ${!h.active ? "opacity-40" : ""}`}>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      <p className="text-white font-bold text-sm">{h.hazard_type}</p>
+                      <p className="text-slate-400 text-xs">{t.zone}: <span className="text-slate-200">{h.zone}</span></p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <SeverityPill severity={h.severity} />
+                      {!h.active && <span className="text-xs text-slate-600 font-medium">Resolved</span>}
+                    </div>
+                  </div>
+                  <p className="text-slate-300 text-xs leading-relaxed mb-3">{h.description}</p>
+                  <div className="flex gap-4 text-xs text-slate-500">
+                    <span>📏 {t.distance}: <span className="text-white font-medium">{h.distance_m} m</span></span>
+                    <span>🧭 {t.bearing}: <span className="text-white font-medium">{h.bearing}</span></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+      </div>
+
+      {/* ── Incident Logging Form ── */}
+      <div>
+        <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+          <span className="text-[#FFCD11]">📝</span>{t.incidentTitle}
+        </h3>
+        <Panel>
+          <div className="grid sm:grid-cols-2 gap-4 mb-4">
+            <InputRow label={t.incidentType}>
+              <SelectInput value={form.incident_type} onChange={v => setF("incident_type", v)}
+                options={t.incidentTypes} raw={true} />
+            </InputRow>
+            <InputRow label={t.incidentSeverity}>
+              <SelectInput value={form.severity} onChange={v => setF("severity", v)}
+                options={["LOW", "MODERATE", "HIGH", "CRITICAL"]} raw={true} />
+            </InputRow>
+          </div>
+          <div className="mb-4">
+            <InputRow label={t.incidentLocation}>
+              <input type="text" value={form.location} onChange={e => setF("location", e.target.value)}
+                placeholder="e.g. Grid B-4, Zone 3"
+                className="w-full bg-[#0d0d0f] border border-slate-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FFCD11] transition-colors" />
+            </InputRow>
+          </div>
+          <div className="mb-4">
+            <InputRow label={t.incidentNotes}>
+              <TextArea value={form.notes} onChange={v => setF("notes", v)}
+                placeholder="Describe what happened, contributing factors, and immediate actions taken…" rows={4} />
+            </InputRow>
+          </div>
+          <div className="flex items-center gap-4">
+            <button onClick={handleSubmitIncident} disabled={submitting || !form.incident_type || !form.location || !form.notes}
+              className="bg-[#FFCD11] hover:bg-yellow-300 disabled:opacity-40 text-black font-bold px-6 py-2.5 rounded-xl text-sm transition-colors">
+              {submitting ? t.incidentSubmitting : t.incidentSubmit}
+            </button>
+            {submitMsg && <p className="text-sm text-green-400 font-medium">{submitMsg}</p>}
+          </div>
+        </Panel>
+      </div>
+
+      {/* ── Incident History ── */}
+      <div>
+        <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+          <span className="text-[#FFCD11]">🗂️</span>{t.incidentHistoryTitle}
+          <span className="text-xs text-slate-500 font-normal">({incidents.length} records)</span>
+        </h3>
+        {incLoad ? <LoadingSpinner text={t.loading} /> : (
+          <div className="space-y-3">
+            {[...incidents].reverse().map((inc, i) => (
+              <Panel key={i} className={`border-l-4 ${
+                inc.severity === "CRITICAL" ? "border-l-red-500" :
+                inc.severity === "HIGH"     ? "border-l-orange-500" :
+                inc.severity === "MODERATE" ? "border-l-yellow-500" : "border-l-green-600"
+              }`}>
+                <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                  <div>
+                    <span className="text-white font-semibold text-sm">{inc.incident_type}</span>
+                    <span className="text-slate-500 text-xs ml-2">· {inc.location}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <SeverityPill severity={inc.severity} />
+                    <span className="text-slate-600 text-xs font-mono">{inc.timestamp}</span>
+                  </div>
+                </div>
+                <p className="text-slate-300 text-xs leading-relaxed">{inc.notes}</p>
+                <p className="text-slate-600 text-xs mt-1">{t.operator}: {inc.operator} · {inc.machineID}</p>
+              </Panel>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ===========================================================================
+// TAB 4 — ENVIRONMENTAL ANALYSIS & ML TIME PREDICTOR
+// ===========================================================================
+function EnvView({ t }) {
+  const [form, setForm] = useState({ load_cycles: 8, estimated_fuel: 5, weather_severity: 0, ground_stability: 0, ambient_temp: 22 });
   const [result, setResult]   = useState(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr]         = useState("");
@@ -506,7 +1065,7 @@ function EnvironmentView({ t }) {
       if (!res.ok) throw new Error(data.errors?.join(", ") || "Error");
       setResult(data);
     } catch (e) {
-      setErr(t.errorAnalyze + " — " + e.message);
+      setErr(t.errorPost + " — " + e.message);
     } finally {
       setLoading(false);
     }
@@ -516,12 +1075,10 @@ function EnvironmentView({ t }) {
 
   return (
     <div className="p-4 sm:p-6">
-      <SectionTitle icon="🌍" title={t.envTitle} />
+      <SectionTitle icon="🌧️" title={t.envTitle} />
       <p className="text-slate-400 text-sm mb-6">{t.envSubtitle}</p>
-
       <div className="grid lg:grid-cols-2 gap-6">
-
-        {/* ── Input form ── */}
+        {/* Inputs */}
         <Panel className="space-y-4">
           <InputRow label={`${t.lblLoadCycles} (1–25)`}>
             <NumInput value={form.load_cycles} onChange={v => set("load_cycles", v)} min={1} max={25} />
@@ -538,29 +1095,26 @@ function EnvironmentView({ t }) {
           <InputRow label={`${t.lblTemp} (-20 to 50)`}>
             <NumInput value={form.ambient_temp} onChange={v => set("ambient_temp", v)} min={-20} max={50} />
           </InputRow>
-
           <button onClick={handleAnalyze} disabled={loading}
-            className="w-full bg-[#FFCD11] hover:bg-yellow-300 disabled:opacity-50 text-black font-bold py-3 rounded-xl transition-colors text-sm mt-2">
+            className="w-full bg-[#FFCD11] hover:bg-yellow-300 disabled:opacity-50 text-black font-bold py-3 rounded-xl transition-colors text-sm">
             {loading ? t.analyzing : t.analyzeBtn}
           </button>
-          {err && <p className="text-red-400 text-xs mt-1">{err}</p>}
+          {err && <p className="text-red-400 text-xs">{err}</p>}
         </Panel>
 
-        {/* ── Results ── */}
+        {/* Results */}
         <div className="space-y-4">
           {!result && !loading && (
-            <Panel className="flex items-center justify-center h-full min-h-[200px]">
+            <Panel className="flex items-center justify-center min-h-[200px]">
               <p className="text-slate-600 text-sm text-center">
-                Configure conditions on the left and click<br />
+                Configure conditions and click<br />
                 <span className="text-[#FFCD11] font-semibold">{t.analyzeBtn}</span>
               </p>
             </Panel>
           )}
           {loading && <LoadingSpinner text={t.analyzing} />}
-
           {result && (
             <>
-              {/* ETA card */}
               <Panel>
                 <p className="text-slate-400 text-xs mb-2">{t.resultETA}</p>
                 <div className="flex items-end gap-2 mb-2">
@@ -568,17 +1122,13 @@ function EnvironmentView({ t }) {
                   <span className="text-slate-400 text-sm pb-1">{t.minutes}</span>
                 </div>
                 <div className="bg-slate-700 rounded-full h-2">
-                  <div className="bg-[#FFCD11] h-2 rounded-full transition-all duration-700"
-                    style={{ width: `${etaBarPct}%` }} />
+                  <div className="bg-[#FFCD11] h-2 rounded-full transition-all duration-700" style={{ width: `${etaBarPct}%` }} />
                 </div>
               </Panel>
-
-              {/* Risk badge card */}
               <Panel>
                 <p className="text-slate-400 text-xs mb-3">{t.resultRisk}</p>
                 <RiskBadge level={result.risk_level} />
                 <p className="text-slate-400 text-xs mt-2">{result.risk_description}</p>
-                {/* Probability mini-bar */}
                 <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
                   {[
                     { label: "Low",      val: result.risk_probabilities.LOW,      color: "bg-green-500" },
@@ -587,42 +1137,29 @@ function EnvironmentView({ t }) {
                   ].map(p => (
                     <div key={p.label}>
                       <div className="bg-slate-700 rounded-full h-1.5 mb-1">
-                        <div className={`${p.color} h-1.5 rounded-full transition-all duration-700`}
-                          style={{ width: `${p.val * 100}%` }} />
+                        <div className={`${p.color} h-1.5 rounded-full transition-all duration-700`} style={{ width: `${p.val * 100}%` }} />
                       </div>
                       <span className="text-slate-500">{p.label} {(p.val * 100).toFixed(0)}%</span>
                     </div>
                   ))}
                 </div>
               </Panel>
-
-              {/* Machine impacts */}
               <Panel>
-                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-                  {t.resultImpacts}
-                </p>
+                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">{t.resultImpacts}</p>
                 <ul className="space-y-2">
                   {result.machine_impacts.map((imp, i) => (
                     <li key={i} className="flex gap-2 text-sm text-slate-300">
-                      <span className="text-[#FFCD11] flex-shrink-0 mt-0.5">•</span>
-                      {imp}
+                      <span className="text-[#FFCD11] flex-shrink-0">•</span>{imp}
                     </li>
                   ))}
                 </ul>
               </Panel>
-
-              {/* Recommended actions */}
               <Panel className={result.risk_level === 2 ? "border-red-700" : result.risk_level === 1 ? "border-yellow-700" : "border-green-800"}>
-                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-                  {t.resultActions}
-                </p>
+                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">{t.resultActions}</p>
                 <ul className="space-y-2">
                   {result.recommended_next_actions.map((act, i) => (
-                    <li key={i} className={`flex gap-2 text-sm font-medium ${
-                      result.risk_level === 2 ? "text-red-300" : result.risk_level === 1 ? "text-yellow-300" : "text-green-300"
-                    }`}>
-                      <span className="flex-shrink-0 mt-0.5">{i + 1}.</span>
-                      {act}
+                    <li key={i} className={`flex gap-2 text-sm font-medium ${result.risk_level === 2 ? "text-red-300" : result.risk_level === 1 ? "text-yellow-300" : "text-green-300"}`}>
+                      <span className="flex-shrink-0">{i + 1}.</span>{act}
                     </li>
                   ))}
                 </ul>
@@ -635,9 +1172,9 @@ function EnvironmentView({ t }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// View 3 — Training Hub
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// TAB 5 — TRAINING & SIMULATION HUB
+// ===========================================================================
 function TrainingView({ t }) {
   const [checked, setChecked] = useState(() => new Array(t.checklistItems.length).fill(false));
   useEffect(() => setChecked(new Array(t.checklistItems.length).fill(false)), [t]);
@@ -646,21 +1183,31 @@ function TrainingView({ t }) {
   const done   = checked.filter(Boolean).length;
   const pct    = Math.round((done / checked.length) * 100);
 
+  // Simulation modal
+  const [simModal, setSimModal] = useState(null); // scenario object | null
+
+  // Instructor booking modal
+  const [bookModal, setBookModal] = useState(false);
+  const [bookForm, setBookForm]   = useState({ name: "", date: "", scenario: t.simScenarios[0]?.title || "" });
+  const [bookMsg, setBookMsg]     = useState("");
+  const setB = (k, v) => setBookForm(f => ({ ...f, [k]: v }));
+  const handleBook = () => { setBookMsg(t.bookSuccess); };
+
   const tagColor = {
-    Safety: "bg-red-900 text-red-300", Efficiency: "bg-blue-900 text-blue-300",
-    Terrain: "bg-amber-900 text-amber-300", Climate: "bg-cyan-900 text-cyan-300",
-    Seguridad: "bg-red-900 text-red-300", Eficiencia: "bg-blue-900 text-blue-300",
-    Terreno: "bg-amber-900 text-amber-300", Clima: "bg-cyan-900 text-cyan-300",
-    सुरक्षा: "bg-red-900 text-red-300", दक्षता: "bg-blue-900 text-blue-300",
-    भूमि: "bg-amber-900 text-amber-300", जलवायु: "bg-cyan-900 text-cyan-300",
+    Safety: "bg-red-900 text-red-300",       Efficiency: "bg-blue-900 text-blue-300",
+    Terrain: "bg-amber-900 text-amber-300",  Climate: "bg-cyan-900 text-cyan-300",
+    Seguridad: "bg-red-900 text-red-300",    Eficiencia: "bg-blue-900 text-blue-300",
+    Terreno: "bg-amber-900 text-amber-300",  Clima: "bg-cyan-900 text-cyan-300",
+    सुरक्षा: "bg-red-900 text-red-300",      दक्षता: "bg-blue-900 text-blue-300",
+    भूमि: "bg-amber-900 text-amber-300",     जलवायु: "bg-cyan-900 text-cyan-300",
   };
 
   return (
-    <div className="p-4 sm:p-6">
+    <div className="p-4 sm:p-6 space-y-8">
       <SectionTitle icon="🎓" title={t.trainingTitle} />
-      <div className="grid lg:grid-cols-2 gap-6">
 
-        {/* Checklist */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Pre-shift checklist */}
         <Panel>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-white font-semibold">{t.checklistTitle}</h3>
@@ -683,15 +1230,13 @@ function TrainingView({ t }) {
                     </svg>
                   )}
                 </span>
-                <span className={`text-sm transition-colors ${
-                  checked[i] ? "line-through text-slate-600" : "text-slate-300 group-hover:text-white"
-                }`}>{item}</span>
+                <span className={`text-sm transition-colors ${checked[i] ? "line-through text-slate-600" : "text-slate-300 group-hover:text-white"}`}>
+                  {item}
+                </span>
               </li>
             ))}
           </ul>
-          {pct === 100 && (
-            <p className="mt-4 text-center text-green-400 font-semibold text-sm">{t.checkAll}</p>
-          )}
+          {pct === 100 && <p className="mt-4 text-center text-green-400 font-semibold text-sm">{t.checkAll}</p>}
         </Panel>
 
         {/* Micro-learning cards */}
@@ -714,24 +1259,105 @@ function TrainingView({ t }) {
             </Panel>
           ))}
         </div>
-
       </div>
+
+      {/* Safety Simulator */}
+      <div>
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <h3 className="text-white font-semibold flex items-center gap-2">
+            <span className="text-[#FFCD11]">🎮</span>{t.simTitle}
+          </h3>
+          <button onClick={() => { setBookModal(true); setBookMsg(""); }}
+            className="bg-slate-700 hover:bg-slate-600 text-[#FFCD11] font-bold text-xs px-4 py-2 rounded-lg border border-[#FFCD11]/40 transition-colors">
+            📅 {t.bookInstructor}
+          </button>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-4">
+          {t.simScenarios.map(scenario => (
+            <Panel key={scenario.id} className="flex flex-col gap-3 hover:border-[#FFCD11]/40 transition-colors">
+              <div className="flex items-start gap-3">
+                <span className="text-3xl flex-shrink-0">{scenario.icon}</span>
+                <div>
+                  <h4 className="text-white font-semibold text-sm">{scenario.title}</h4>
+                  <p className="text-slate-400 text-xs leading-relaxed mt-1">{scenario.desc}</p>
+                </div>
+              </div>
+              <button onClick={() => setSimModal(scenario)}
+                className="w-full bg-[#FFCD11] hover:bg-yellow-300 text-black font-bold text-xs py-2 rounded-lg transition-colors mt-auto">
+                🚀 {t.launchSim}
+              </button>
+            </Panel>
+          ))}
+        </div>
+      </div>
+
+      {/* Simulation launch modal */}
+      <Modal open={!!simModal} onClose={() => setSimModal(null)} title={t.simModalTitle}>
+        {simModal && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-4 bg-slate-900 rounded-xl border border-slate-700">
+              <span className="text-4xl">{simModal.icon}</span>
+              <div>
+                <p className="text-white font-semibold">{simModal.title}</p>
+                <p className="text-slate-400 text-xs mt-1">{simModal.desc}</p>
+              </div>
+            </div>
+            <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line">
+              {t.simModalBody(simModal.title)}
+            </p>
+            <div className="flex gap-3">
+              <button className="flex-1 bg-[#FFCD11] hover:bg-yellow-300 text-black font-bold py-2.5 rounded-xl text-sm transition-colors">
+                ▶ {t.launchSim}
+              </button>
+              <button onClick={() => setSimModal(null)}
+                className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-2.5 rounded-xl text-sm transition-colors">
+                {t.closeModal}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Instructor booking modal */}
+      <Modal open={bookModal} onClose={() => setBookModal(false)} title={t.bookModalTitle}>
+        <div className="space-y-4">
+          <InputRow label={t.bookName}>
+            <input type="text" value={bookForm.name} onChange={e => setB("name", e.target.value)}
+              className="w-full bg-[#0d0d0f] border border-slate-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FFCD11] transition-colors" />
+          </InputRow>
+          <InputRow label={t.bookDate}>
+            <input type="date" value={bookForm.date} onChange={e => setB("date", e.target.value)}
+              className="w-full bg-[#0d0d0f] border border-slate-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FFCD11] transition-colors [color-scheme:dark]" />
+          </InputRow>
+          <InputRow label={t.bookScenario}>
+            <SelectInput value={bookForm.scenario} onChange={v => setB("scenario", v)}
+              options={t.simScenarios.map(s => s.title)} raw={true} />
+          </InputRow>
+          {bookMsg ? (
+            <div className="p-3 bg-green-950 border border-green-700 rounded-xl text-green-300 text-sm text-center">{bookMsg}</div>
+          ) : (
+            <button onClick={handleBook} disabled={!bookForm.name || !bookForm.date}
+              className="w-full bg-[#FFCD11] hover:bg-yellow-300 disabled:opacity-40 text-black font-bold py-2.5 rounded-xl text-sm transition-colors">
+              {t.bookSubmit}
+            </button>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Root App
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// ROOT APP
+// ===========================================================================
 export default function App() {
   const [lang, setLang] = useState("en");
-  const [tab,  setTab]  = useState("telemetry");
+  const [tab,  setTab]  = useState("tasks");
   const t = DICT[lang];
 
   const [telemetry,  setTelemetry]  = useState([]);
   const [telemLoad,  setTelemLoad]  = useState(true);
   const [telemErr,   setTelemErr]   = useState(false);
-
   const [anomalies,  setAnomalies]  = useState([]);
 
   const fetchAll = useCallback(async () => {
@@ -743,7 +1369,7 @@ export default function App() {
       ]);
       const tData = await tRes.json();
       const aData = await aRes.json();
-      setTelemetry(tData.data  || []);
+      setTelemetry(tData.data     || []);
       setAnomalies(aData.anomalies || []);
     } catch {
       setTelemErr(true);
@@ -760,9 +1386,11 @@ export default function App() {
       <SafetyBanner t={t} lang={lang} anomalies={anomalies} />
 
       <main className="flex-1">
-        {tab === "telemetry"   && <TelemetryView   t={t} telemetry={telemetry} loading={telemLoad} error={telemErr} />}
-        {tab === "environment" && <EnvironmentView t={t} />}
-        {tab === "training"    && <TrainingView    t={t} />}
+        {tab === "tasks"    && <TaskView      t={t} />}
+        {tab === "telemetry"&& <TelemetryView t={t} telemetry={telemetry} loading={telemLoad} error={telemErr} />}
+        {tab === "safety"   && <SafetyView    t={t} lang={lang} anomalies={anomalies} />}
+        {tab === "env"      && <EnvView       t={t} />}
+        {tab === "training" && <TrainingView  t={t} />}
       </main>
 
       <footer className="bg-[#18181c] border-t border-slate-800 px-4 py-3 text-center text-slate-600 text-xs">
