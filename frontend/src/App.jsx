@@ -1,15 +1,6 @@
 /**
- * CAT Smart Operator Assistant
- * React + Tailwind CSS — Production-ready Hackathon Prototype
- *
- * Features:
- *  - Dark industrial CAT UI (yellow / slate)
- *  - Multilingual switcher (EN / ES / HI) with live UI + voice alerts
- *  - Real-time safety banner with Web Speech API audio
- *  - Telemetry dashboard with live data from Flask
- *  - Interactive ML Task Time Predictor
- *  - Operator Training Hub (pre-shift checklist + micro-learning cards)
- *  - Environmental Impact Widget (wasted fuel + CO2)
+ * CAT Smart Operator Assistant — React Frontend v2
+ * Upgraded UI + Dual-Output ML Environmental Action Center
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -20,37 +11,51 @@ import { useState, useEffect, useCallback } from "react";
 const DICT = {
   en: {
     appTitle: "CAT Smart Operator Assistant",
-    appSubtitle: "EXC001 · OP1001 · Live Telemetry",
+    appSubtitle: "EXC001 · OP1001 · Live Operations",
     navTelemetry: "Telemetry",
-    navPredictor: "Task Predictor",
+    navEnvironment: "Env. Analysis",
     navTraining: "Training Hub",
-    navEnvironment: "Eco Impact",
-    safetyBannerTitle: "⚠ SAFETY ALERT",
-    seatbeltAlert: "Seatbelt UNFASTENED — Fasten immediately!",
-    idlingAlert: (mins) => `Excessive idling detected: ${mins} min (limit 45 min)`,
-    playAudio: "🔊 Play Audio Alert",
+    // Safety banner
+    safetyBannerTitle: "⚠ ACTIVE SAFETY ALERT",
+    seatbeltAlert: "Seatbelt UNFASTENED — Fasten immediately before operating.",
+    idlingAlert: (m) => `Excessive idling: ${m} min detected (threshold: 45 min).`,
+    playAudio: "🔊 Play Voice Alert",
+    dismiss: "Dismiss",
+    // Telemetry
     telemetryTitle: "Live Telemetry Feed",
-    timestamp: "Timestamp",
-    engineHours: "Engine Hrs",
-    fuelUsed: "Fuel (L)",
-    loadCycles: "Load Cycles",
-    idlingTime: "Idle (min)",
-    seatbelt: "Seatbelt",
-    alert: "Alert",
+    colTimestamp: "Timestamp",
+    colEngineHrs: "Engine Hrs",
+    colFuel: "Fuel (L)",
+    colCycles: "Load Cycles",
+    colIdle: "Idle (min)",
+    colSeatbelt: "Seatbelt",
+    colAlert: "Alert",
     fastened: "Fastened",
     unfastened: "Unfastened",
     yes: "YES",
     no: "NO",
-    predictorTitle: "ML Task Time Predictor",
-    loadCyclesLabel: "Load Cycles",
-    fuelLimitLabel: "Fuel Limit (L)",
-    weatherLabel: "Weather / Terrain",
-    dry: "Dry",
-    rain: "Rain",
-    mud: "Mud",
-    predictBtn: "Predict Duration",
-    predicting: "Predicting…",
-    predictResult: (mins) => `Estimated Duration: ${mins} min`,
+    kpiEngineHrs: "Engine Hours",
+    kpiFuelTotal: "Total Fuel",
+    kpiCycles: "Load Cycles",
+    kpiAlerts: "Safety Alerts",
+    // Environment analysis
+    envTitle: "Environmental Impact & Action Center",
+    envSubtitle: "Enter operating conditions to get ML-powered ETA, risk assessment, and operator guidance.",
+    lblLoadCycles: "Load Cycles",
+    lblFuel: "Estimated Fuel (L)",
+    lblWeather: "Weather Severity",
+    lblGround: "Ground Stability",
+    lblTemp: "Ambient Temp (°C)",
+    weatherOpts: ["0 — Clear", "1 — Light Rain", "2 — Heavy Rain", "3 — Storm"],
+    groundOpts: ["0 — Firm / Dry", "1 — Soft / Wet", "2 — Loose / Muddy", "3 — Unstable / Rocky"],
+    analyzeBtn: "Analyze Conditions",
+    analyzing: "Analyzing…",
+    resultETA: "Predicted Task ETA",
+    resultRisk: "Safety Risk Level",
+    resultImpacts: "Machine Limits Impact",
+    resultActions: "Recommended Next Steps",
+    minutes: "min",
+    // Training
     trainingTitle: "Operator Training Hub",
     checklistTitle: "Pre-Shift Safety Checklist",
     checklistItems: [
@@ -59,128 +64,137 @@ const DICT = {
       "Check engine oil & coolant levels",
       "Test horn, lights, and reverse alarm",
       "Fasten seatbelt before engine start",
-      "Clear personnel from swing radius",
+      "Clear personnel from 3 m swing radius",
       "Confirm radio / comms operational",
+      "Check track tension and undercarriage",
     ],
     microTitle: "Micro-Learning Cards",
-    card1Title: "Safe Swing Zones",
-    card1Body: "Always check blind spots before rotating the upper structure. Maintain 3 m exclusion zone.",
-    card1Tag: "Safety",
-    card2Title: "Fuel-Efficient Digging",
-    card2Body: "Match bucket size to material density. Avoid over-swinging — short, deliberate cycles reduce fuel 18%.",
-    card2Tag: "Efficiency",
-    card3Title: "Adverse Terrain Protocol",
-    card3Body: "On slopes >15°, lower the boom fully when parking. Engage travel lock on muddy surfaces.",
-    card3Tag: "Terrain",
-    envTitle: "Environmental Impact",
-    envSubtitle: "Losses from excessive idling sessions",
-    wastedFuel: "Wasted Fuel",
-    co2Emitted: "CO₂ Emitted",
-    anomalyCount: "Anomaly Events",
-    litres: "L",
-    kg: "kg",
-    loading: "Loading…",
-    error: "Failed to load data. Ensure backend is running on port 5000.",
+    cards: [
+      { icon: "🔄", title: "Safe Swing Zones", tag: "Safety", body: "Always check blind spots before rotating the upper structure. Maintain a 3 m exclusion zone around the machine at all times." },
+      { icon: "⛽", title: "Fuel-Efficient Digging", tag: "Efficiency", body: "Match bucket size to material density. Short, deliberate cycles reduce fuel consumption by up to 18%." },
+      { icon: "🏔️", title: "Adverse Terrain Protocol", tag: "Terrain", body: "On slopes >15°, lower the boom fully when parking. Engage Travel Lock on muddy or wet surfaces." },
+      { icon: "🌡️", title: "Extreme Temperature Ops", tag: "Climate", body: "Below 0°C: run 10-min warm-up idle. Above 35°C: check coolant every 2 hours and reduce continuous duty cycle." },
+    ],
+    checkAll: "All checks complete — Safe to operate! ✅",
+    // General
+    loading: "Loading data…",
+    errorLoad: "Failed to load. Check the backend is running on port 5000.",
+    errorAnalyze: "Analysis failed. Check backend connection.",
     footerText: "© 2025 Caterpillar Inc. · Smart Operator Assistant · Hackathon Prototype",
   },
+
   es: {
     appTitle: "Asistente Inteligente CAT",
-    appSubtitle: "EXC001 · OP1001 · Telemetría en Vivo",
+    appSubtitle: "EXC001 · OP1001 · Operaciones en Vivo",
     navTelemetry: "Telemetría",
-    navPredictor: "Predictor",
+    navEnvironment: "Análisis Amb.",
     navTraining: "Capacitación",
-    navEnvironment: "Impacto Eco",
-    safetyBannerTitle: "⚠ ALERTA DE SEGURIDAD",
-    seatbeltAlert: "Cinturón NO abrochado — ¡Abróchelo de inmediato!",
-    idlingAlert: (mins) => `Ralentí excesivo detectado: ${mins} min (límite 45 min)`,
+    safetyBannerTitle: "⚠ ALERTA DE SEGURIDAD ACTIVA",
+    seatbeltAlert: "Cinturón NO abrochado — ¡Abróchelo antes de operar!",
+    idlingAlert: (m) => `Ralentí excesivo: ${m} min detectados (umbral: 45 min).`,
     playAudio: "🔊 Reproducir Alerta",
+    dismiss: "Cerrar",
     telemetryTitle: "Telemetría en Vivo",
-    timestamp: "Hora",
-    engineHours: "Horas Motor",
-    fuelUsed: "Combustible (L)",
-    loadCycles: "Ciclos de Carga",
-    idlingTime: "Ralentí (min)",
-    seatbelt: "Cinturón",
-    alert: "Alerta",
+    colTimestamp: "Hora",
+    colEngineHrs: "Horas Motor",
+    colFuel: "Combustible (L)",
+    colCycles: "Ciclos",
+    colIdle: "Ralentí (min)",
+    colSeatbelt: "Cinturón",
+    colAlert: "Alerta",
     fastened: "Abrochado",
     unfastened: "No Abrochado",
     yes: "SÍ",
     no: "NO",
-    predictorTitle: "Predictor de Tareas ML",
-    loadCyclesLabel: "Ciclos de Carga",
-    fuelLimitLabel: "Límite de Combustible (L)",
-    weatherLabel: "Clima / Terreno",
-    dry: "Seco",
-    rain: "Lluvia",
-    mud: "Barro",
-    predictBtn: "Predecir Duración",
-    predicting: "Calculando…",
-    predictResult: (mins) => `Duración Estimada: ${mins} min`,
+    kpiEngineHrs: "Horas Motor",
+    kpiFuelTotal: "Combustible Total",
+    kpiCycles: "Ciclos de Carga",
+    kpiAlerts: "Alertas de Seguridad",
+    envTitle: "Centro de Impacto Ambiental",
+    envSubtitle: "Ingrese las condiciones para obtener ETA, riesgo y orientación del operador.",
+    lblLoadCycles: "Ciclos de Carga",
+    lblFuel: "Combustible Estimado (L)",
+    lblWeather: "Severidad del Clima",
+    lblGround: "Estabilidad del Suelo",
+    lblTemp: "Temperatura Ambiente (°C)",
+    weatherOpts: ["0 — Despejado", "1 — Lluvia Ligera", "2 — Lluvia Fuerte", "3 — Tormenta"],
+    groundOpts: ["0 — Firme / Seco", "1 — Blando / Mojado", "2 — Suelto / Lodoso", "3 — Inestable / Rocoso"],
+    analyzeBtn: "Analizar Condiciones",
+    analyzing: "Analizando…",
+    resultETA: "ETA de Tarea Predicha",
+    resultRisk: "Nivel de Riesgo",
+    resultImpacts: "Impacto en la Máquina",
+    resultActions: "Próximos Pasos Recomendados",
+    minutes: "min",
     trainingTitle: "Centro de Capacitación",
-    checklistTitle: "Lista de Seguridad Pre-Turno",
+    checklistTitle: "Lista Pre-Turno",
     checklistItems: [
       "Inspeccionar líneas hidráulicas",
       "Verificar dientes del cucharón",
       "Revisar aceite de motor y refrigerante",
       "Probar bocina, luces y alarma de retroceso",
-      "Abrochar el cinturón antes de arrancar",
-      "Despejar personal del radio de giro",
-      "Confirmar radio operativa",
+      "Abrochar cinturón antes de arrancar",
+      "Despejar radio de giro de 3 m",
+      "Confirmar radio y comunicaciones",
+      "Revisar tensión de orugas",
     ],
     microTitle: "Tarjetas de Aprendizaje",
-    card1Title: "Zonas de Giro Seguras",
-    card1Body: "Verifique puntos ciegos antes de rotar. Mantenga zona de exclusión de 3 m.",
-    card1Tag: "Seguridad",
-    card2Title: "Excavación Eficiente",
-    card2Body: "Adapte el tamaño del cucharón a la densidad del material. Los ciclos cortos reducen combustible un 18%.",
-    card2Tag: "Eficiencia",
-    card3Title: "Protocolo de Terreno",
-    card3Body: "En pendientes >15°, baje el boom al estacionar. Active bloqueo de traslado en barro.",
-    card3Tag: "Terreno",
-    envTitle: "Impacto Ambiental",
-    envSubtitle: "Pérdidas por ralentí excesivo",
-    wastedFuel: "Combustible Desperdiciado",
-    co2Emitted: "CO₂ Emitido",
-    anomalyCount: "Eventos de Anomalía",
-    litres: "L",
-    kg: "kg",
-    loading: "Cargando…",
-    error: "Error al cargar datos. Asegúrese de que el backend esté en el puerto 5000.",
+    cards: [
+      { icon: "🔄", title: "Zonas de Giro Seguras", tag: "Seguridad", body: "Verifique puntos ciegos antes de rotar. Mantenga zona de exclusión de 3 m alrededor de la máquina." },
+      { icon: "⛽", title: "Excavación Eficiente", tag: "Eficiencia", body: "Adapte el cucharón a la densidad del material. Los ciclos cortos reducen combustible un 18%." },
+      { icon: "🏔️", title: "Terreno Adverso", tag: "Terreno", body: "En pendientes >15°, baje el boom al estacionar. Active bloqueo de traslado en superficies mojadas." },
+      { icon: "🌡️", title: "Operación en Temperaturas Extremas", tag: "Clima", body: "Bajo 0°C: 10 min de ralentí. Sobre 35°C: revisar refrigerante cada 2 horas." },
+    ],
+    checkAll: "¡Todas las verificaciones completas — Seguro para operar! ✅",
+    loading: "Cargando datos…",
+    errorLoad: "Error al cargar. Verifique el backend en el puerto 5000.",
+    errorAnalyze: "Análisis fallido. Verifique la conexión al backend.",
     footerText: "© 2025 Caterpillar Inc. · Asistente Inteligente · Prototipo",
   },
+
   hi: {
     appTitle: "CAT स्मार्ट ऑपरेटर सहायक",
-    appSubtitle: "EXC001 · OP1001 · लाइव टेलीमेट्री",
+    appSubtitle: "EXC001 · OP1001 · लाइव ऑपरेशन",
     navTelemetry: "टेलीमेट्री",
-    navPredictor: "टास्क प्रेडिक्टर",
+    navEnvironment: "पर्यावरण विश्लेषण",
     navTraining: "प्रशिक्षण",
-    navEnvironment: "पर्यावरण",
-    safetyBannerTitle: "⚠ सुरक्षा चेतावनी",
-    seatbeltAlert: "सीटबेल्ट नहीं लगी — तुरंत लगाएं!",
-    idlingAlert: (mins) => `अत्यधिक आइडलिंग: ${mins} मिनट (सीमा 45 मिनट)`,
-    playAudio: "🔊 ऑडियो अलर्ट चलाएं",
+    safetyBannerTitle: "⚠ सक्रिय सुरक्षा चेतावनी",
+    seatbeltAlert: "सीटबेल्ट नहीं लगी — ऑपरेट करने से पहले तुरंत लगाएं!",
+    idlingAlert: (m) => `अत्यधिक आइडलिंग: ${m} मिनट (सीमा: 45 मिनट)।`,
+    playAudio: "🔊 वॉयस अलर्ट चलाएं",
+    dismiss: "बंद करें",
     telemetryTitle: "लाइव टेलीमेट्री फीड",
-    timestamp: "समय",
-    engineHours: "इंजन घंटे",
-    fuelUsed: "ईंधन (L)",
-    loadCycles: "लोड साइकिल",
-    idlingTime: "आइडल (मिनट)",
-    seatbelt: "सीटबेल्ट",
-    alert: "अलर्ट",
+    colTimestamp: "समय",
+    colEngineHrs: "इंजन घंटे",
+    colFuel: "ईंधन (L)",
+    colCycles: "लोड साइकिल",
+    colIdle: "आइडल (मिनट)",
+    colSeatbelt: "सीटबेल्ट",
+    colAlert: "अलर्ट",
     fastened: "लगी है",
     unfastened: "नहीं लगी",
     yes: "हाँ",
     no: "नहीं",
-    predictorTitle: "ML टास्क टाइम प्रेडिक्टर",
-    loadCyclesLabel: "लोड साइकिल",
-    fuelLimitLabel: "ईंधन सीमा (L)",
-    weatherLabel: "मौसम / भूमि",
-    dry: "सूखा",
-    rain: "बारिश",
-    mud: "कीचड़",
-    predictBtn: "अवधि का अनुमान",
-    predicting: "गणना हो रही है…",
-    predictResult: (mins) => `अनुमानित अवधि: ${mins} मिनट`,
+    kpiEngineHrs: "इंजन घंटे",
+    kpiFuelTotal: "कुल ईंधन",
+    kpiCycles: "लोड साइकिल",
+    kpiAlerts: "सुरक्षा अलर्ट",
+    envTitle: "पर्यावरण प्रभाव और एक्शन सेंटर",
+    envSubtitle: "ऑपरेटिंग कंडीशन दर्ज करें — ML आधारित ETA, जोखिम और मार्गदर्शन पाएं।",
+    lblLoadCycles: "लोड साइकिल",
+    lblFuel: "अनुमानित ईंधन (L)",
+    lblWeather: "मौसम गंभीरता",
+    lblGround: "भूमि स्थिरता",
+    lblTemp: "परिवेश तापमान (°C)",
+    weatherOpts: ["0 — साफ", "1 — हल्की बारिश", "2 — भारी बारिश", "3 — तूफान"],
+    groundOpts: ["0 — ठोस / सूखा", "1 — मुलायम / गीला", "2 — ढीला / कीचड़", "3 — अस्थिर / चट्टानी"],
+    analyzeBtn: "स्थिति का विश्लेषण करें",
+    analyzing: "विश्लेषण हो रहा है…",
+    resultETA: "अनुमानित टास्क ETA",
+    resultRisk: "सुरक्षा जोखिम स्तर",
+    resultImpacts: "मशीन सीमा प्रभाव",
+    resultActions: "अनुशंसित अगले कदम",
+    minutes: "मिनट",
     trainingTitle: "ऑपरेटर प्रशिक्षण केंद्र",
     checklistTitle: "प्री-शिफ्ट सुरक्षा चेकलिस्ट",
     checklistItems: [
@@ -188,106 +202,166 @@ const DICT = {
       "बकेट टीथ की जांच करें",
       "इंजन ऑयल और कूलेंट जांचें",
       "हॉर्न, लाइट और रिवर्स अलार्म टेस्ट करें",
-      "इंजन चालू करने से पहले सीटबेल्ट लगाएं",
-      "स्विंग रेडियस से कर्मियों को हटाएं",
+      "इंजन से पहले सीटबेल्ट लगाएं",
+      "3 मीटर स्विंग रेडियस खाली करें",
       "रेडियो संचार की जांच करें",
+      "ट्रैक टेंशन और अंडरकैरिज जांचें",
     ],
     microTitle: "माइक्रो-लर्निंग कार्ड",
-    card1Title: "सुरक्षित स्विंग ज़ोन",
-    card1Body: "घुमाने से पहले ब्लाइंड स्पॉट जांचें। 3 मीटर का एक्सक्लूज़न ज़ोन बनाए रखें।",
-    card1Tag: "सुरक्षा",
-    card2Title: "ईंधन-कुशल खुदाई",
-    card2Body: "बकेट साइज़ सामग्री के अनुसार चुनें। छोटे चक्र ईंधन 18% बचाते हैं।",
-    card2Tag: "दक्षता",
-    card3Title: "प्रतिकूल भूमि प्रोटोकॉल",
-    card3Body: "15° से अधिक ढलान पर पार्किंग करते समय बूम नीचे करें। कीचड़ में ट्रैवल लॉक लगाएं।",
-    card3Tag: "भूमि",
-    envTitle: "पर्यावरणीय प्रभाव",
-    envSubtitle: "अत्यधिक आइडलिंग से हानि",
-    wastedFuel: "बर्बाद ईंधन",
-    co2Emitted: "CO₂ उत्सर्जन",
-    anomalyCount: "विसंगति घटनाएं",
-    litres: "L",
-    kg: "kg",
-    loading: "लोड हो रहा है…",
-    error: "डेटा लोड नहीं हुआ। पोर्ट 5000 पर बैकएंड चला रहे हैं?",
+    cards: [
+      { icon: "🔄", title: "सुरक्षित स्विंग ज़ोन", tag: "सुरक्षा", body: "घुमाने से पहले ब्लाइंड स्पॉट जांचें। मशीन के चारों ओर 3 मीटर का एक्सक्लूज़न ज़ोन बनाए रखें।" },
+      { icon: "⛽", title: "ईंधन-कुशल खुदाई", tag: "दक्षता", body: "बकेट साइज़ सामग्री के अनुसार चुनें। छोटे चक्र ईंधन 18% बचाते हैं।" },
+      { icon: "🏔️", title: "प्रतिकूल भूमि प्रोटोकॉल", tag: "भूमि", body: "15° से अधिक ढलान पर पार्किंग करते समय बूम नीचे करें। गीली सतह पर ट्रैवल लॉक लगाएं।" },
+      { icon: "🌡️", title: "अत्यधिक तापमान ऑपरेशन", tag: "जलवायु", body: "0°C से नीचे: 10 मिनट वार्म-अप आइडल। 35°C से ऊपर: हर 2 घंटे कूलेंट जांचें।" },
+    ],
+    checkAll: "सभी जांच पूरी — ऑपरेट करना सुरक्षित है! ✅",
+    loading: "डेटा लोड हो रहा है…",
+    errorLoad: "लोड नहीं हुआ। पोर्ट 5000 पर बैकएंड चला रहे हैं?",
+    errorAnalyze: "विश्लेषण विफल। बैकएंड कनेक्शन जांचें।",
     footerText: "© 2025 Caterpillar Inc. · स्मार्ट ऑपरेटर सहायक · हैकाथॉन प्रोटोटाइप",
   },
 };
 
-// Language → BCP-47 voice code mapping for Web Speech API
 const VOICE_LANG = { en: "en-US", es: "es-ES", hi: "hi-IN" };
+const API = "http://localhost:5000/api";
 
 // ---------------------------------------------------------------------------
-// Utility helpers
+// Utility
 // ---------------------------------------------------------------------------
 function speak(text, lang) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = VOICE_LANG[lang] || "en-US";
-  utterance.rate = 0.95;
-  utterance.pitch = 1;
-  window.speechSynthesis.speak(utterance);
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = VOICE_LANG[lang] || "en-US";
+  u.rate = 0.92;
+  window.speechSynthesis.speak(u);
 }
 
-const API = "http://localhost:5000/api";
-
 // ---------------------------------------------------------------------------
-// Sub-components
+// Primitive components
 // ---------------------------------------------------------------------------
-
-/** Top navigation bar */
-function NavBar({ t, lang, setLang, activeTab, setActiveTab }) {
-  const tabs = [
-    { id: "telemetry", label: t.navTelemetry },
-    { id: "predictor", label: t.navPredictor },
-    { id: "training", label: t.navTraining },
-    { id: "environment", label: t.navEnvironment },
-  ];
-
+function Badge({ ok, labelOk, labelBad }) {
   return (
-    <nav className="bg-slate-900 border-b border-yellow-500 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-      {/* Logo + Title */}
+    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+      ok ? "bg-green-900 text-green-300" : "bg-red-900 text-red-300"
+    }`}>
+      {ok ? labelOk : labelBad}
+    </span>
+  );
+}
+
+function RiskBadge({ level }) {
+  const styles = [
+    "bg-green-900 text-green-300 border-green-700",
+    "bg-yellow-900 text-yellow-300 border-yellow-700",
+    "bg-red-900 text-red-300 border-red-700",
+  ];
+  const labels = ["LOW — OPTIMAL", "MODERATE — CAUTION", "CRITICAL — HIGH RISK"];
+  const icons  = ["✅", "⚠️", "🚨"];
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold border ${styles[level]}`}>
+      {icons[level]} {labels[level]}
+    </span>
+  );
+}
+
+function SectionTitle({ icon, title }) {
+  return (
+    <h2 className="flex items-center gap-2 text-[#FFCD11] text-xl font-bold mb-5">
+      <span>{icon}</span>{title}
+    </h2>
+  );
+}
+
+function Panel({ children, className = "" }) {
+  return (
+    <div className={`bg-[#18181c] border border-slate-700 rounded-xl p-5 ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+function InputRow({ label, children }) {
+  return (
+    <div>
+      <label className="block text-slate-300 text-sm font-medium mb-1.5">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function NumInput({ value, onChange, min, max, step = 1 }) {
+  return (
+    <input
+      type="number" min={min} max={max} step={step} value={value}
+      onChange={e => onChange(Number(e.target.value))}
+      className="w-full bg-[#0d0d0f] border border-slate-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FFCD11] transition-colors"
+    />
+  );
+}
+
+function SelectInput({ value, onChange, options }) {
+  return (
+    <select
+      value={value} onChange={e => onChange(Number(e.target.value))}
+      className="w-full bg-[#0d0d0f] border border-slate-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FFCD11] transition-colors"
+    >
+      {options.map((o, i) => <option key={i} value={i}>{o}</option>)}
+    </select>
+  );
+}
+
+function LoadingSpinner({ text }) {
+  return (
+    <div className="py-16 text-center">
+      <div className="inline-block w-8 h-8 border-4 border-[#FFCD11] border-t-transparent rounded-full animate-spin mb-4" />
+      <p className="text-slate-400 text-sm">{text}</p>
+    </div>
+  );
+}
+
+function ErrorBlock({ text }) {
+  return (
+    <div className="m-4 p-4 bg-red-950 border border-red-700 rounded-xl text-red-300 text-sm">⚠ {text}</div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// NavBar
+// ---------------------------------------------------------------------------
+function NavBar({ t, lang, setLang, tab, setTab }) {
+  const tabs = [
+    { id: "telemetry",   label: t.navTelemetry },
+    { id: "environment", label: t.navEnvironment },
+    { id: "training",    label: t.navTraining },
+  ];
+  return (
+    <nav className="bg-[#18181c] border-b border-[#FFCD11]/30 px-4 py-3 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-20">
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 bg-yellow-400 rounded flex items-center justify-center font-black text-black text-lg select-none">
+        <div className="w-10 h-10 bg-[#FFCD11] rounded-lg flex items-center justify-center font-black text-black text-base select-none shadow-lg">
           CAT
         </div>
         <div>
-          <h1 className="text-yellow-400 font-bold text-lg leading-tight">{t.appTitle}</h1>
-          <p className="text-slate-400 text-xs">{t.appSubtitle}</p>
+          <h1 className="text-[#FFCD11] font-bold text-lg leading-tight">{t.appTitle}</h1>
+          <p className="text-slate-500 text-xs">{t.appSubtitle}</p>
         </div>
       </div>
-
-      {/* Tab nav */}
       <div className="flex gap-1 flex-wrap">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-              activeTab === tab.id
-                ? "bg-yellow-400 text-black"
-                : "text-slate-300 hover:bg-slate-700"
-            }`}
-          >
-            {tab.label}
+        {tabs.map(tb => (
+          <button key={tb.id} onClick={() => setTab(tb.id)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              tab === tb.id ? "bg-[#FFCD11] text-black" : "text-slate-300 hover:bg-slate-800"
+            }`}>
+            {tb.label}
           </button>
         ))}
       </div>
-
-      {/* Language switcher */}
       <div className="flex gap-1">
-        {["en", "es", "hi"].map((l) => (
-          <button
-            key={l}
-            onClick={() => setLang(l)}
+        {["en", "es", "hi"].map(l => (
+          <button key={l} onClick={() => setLang(l)}
             className={`px-2.5 py-1 rounded text-xs font-bold uppercase transition-colors ${
-              lang === l
-                ? "bg-yellow-400 text-black"
-                : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-            }`}
-          >
+              lang === l ? "bg-[#FFCD11] text-black" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+            }`}>
             {l}
           </button>
         ))}
@@ -296,59 +370,39 @@ function NavBar({ t, lang, setLang, activeTab, setActiveTab }) {
   );
 }
 
-/** Safety banner – only shown when anomalies exist */
+// ---------------------------------------------------------------------------
+// Safety Banner
+// ---------------------------------------------------------------------------
 function SafetyBanner({ t, lang, anomalies }) {
-  const [dismissed, setDismissed] = useState(false);
+  const [open, setOpen] = useState(true);
+  useEffect(() => setOpen(true), [anomalies]);
 
-  // Reset dismiss when anomalies change
-  useEffect(() => setDismissed(false), [anomalies]);
+  if (!anomalies?.length || !open) return null;
 
-  if (!anomalies || anomalies.length === 0 || dismissed) return null;
+  const seatbelt = anomalies.filter(a => a.flags.includes("SEATBELT_UNFASTENED"));
+  const idling   = anomalies.filter(a => a.flags.includes("HIGH_IDLING"));
 
-  const seatbeltViolations = anomalies.filter((a) =>
-    a.flags.includes("SEATBELT_UNFASTENED")
-  );
-  const idlingViolations = anomalies.filter((a) =>
-    a.flags.includes("HIGH_IDLING")
-  );
-
-  const buildAlertText = () => {
-    const parts = [];
-    if (seatbeltViolations.length) parts.push(t.seatbeltAlert);
-    if (idlingViolations.length)
-      parts.push(t.idlingAlert(idlingViolations[0].idlingTime));
-    return parts.join(". ");
-  };
-
-  const handlePlayAudio = () => speak(buildAlertText(), lang);
+  const alertText = [
+    seatbelt.length ? t.seatbeltAlert : "",
+    idling.length   ? t.idlingAlert(idling[0].idlingTime) : "",
+  ].filter(Boolean).join(" ");
 
   return (
-    <div className="bg-red-900 border-l-4 border-red-400 px-4 py-3 flex flex-wrap items-start gap-3 animate-pulse-slow">
+    <div className="bg-red-950 border-b-2 border-red-500 px-4 py-3 flex flex-wrap items-start gap-3">
       <div className="flex-1 min-w-0">
-        <p className="text-red-300 font-bold text-sm">{t.safetyBannerTitle}</p>
+        <p className="text-red-400 font-bold text-sm tracking-wide">{t.safetyBannerTitle}</p>
         <ul className="mt-1 space-y-0.5">
-          {seatbeltViolations.length > 0 && (
-            <li className="text-white text-sm">🚨 {t.seatbeltAlert}</li>
-          )}
-          {idlingViolations.map((a, i) => (
-            <li key={i} className="text-white text-sm">
-              ⏱ {t.idlingAlert(a.idlingTime)}
-            </li>
-          ))}
+          {seatbelt.length > 0 && <li className="text-white text-sm">🚨 {t.seatbeltAlert}</li>}
+          {idling.map((a, i) => <li key={i} className="text-white text-sm">⏱ {t.idlingAlert(a.idlingTime)}</li>)}
         </ul>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
-        <button
-          onClick={handlePlayAudio}
-          className="bg-yellow-400 text-black text-xs font-bold px-3 py-1.5 rounded hover:bg-yellow-300 transition-colors"
-        >
+        <button onClick={() => speak(alertText, lang)}
+          className="bg-[#FFCD11] text-black text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-yellow-300 transition-colors">
           {t.playAudio}
         </button>
-        <button
-          onClick={() => setDismissed(true)}
-          className="text-slate-400 hover:text-white text-lg leading-none"
-          title="Dismiss"
-        >
+        <button onClick={() => setOpen(false)}
+          className="text-slate-500 hover:text-white text-xl leading-none transition-colors" title={t.dismiss}>
           ✕
         </button>
       </div>
@@ -356,552 +410,312 @@ function SafetyBanner({ t, lang, anomalies }) {
   );
 }
 
-/** Status badge for seatbelt / alert columns */
-function Badge({ ok, labelTrue, labelFalse }) {
-  return (
-    <span
-      className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-        ok ? "bg-green-900 text-green-300" : "bg-red-900 text-red-300"
-      }`}
-    >
-      {ok ? labelTrue : labelFalse}
-    </span>
-  );
-}
-
 // ---------------------------------------------------------------------------
-// Views
+// View 1 — Telemetry
 // ---------------------------------------------------------------------------
-
-/** View 1 – Telemetry table */
 function TelemetryView({ t, telemetry, loading, error }) {
-  if (loading) return <LoadingCard text={t.loading} />;
-  if (error) return <ErrorCard text={t.error} />;
+  if (loading) return <LoadingSpinner text={t.loading} />;
+  if (error)   return <ErrorBlock text={t.errorLoad} />;
+
+  const totalFuel   = telemetry.reduce((s, r) => s + r.fuelUsed, 0).toFixed(1);
+  const totalCycles = telemetry.reduce((s, r) => s + r.loadCycles, 0);
+  const alertCount  = telemetry.filter(r => r.safetyAlert).length;
+  const lastHrs     = telemetry[telemetry.length - 1]?.engineHours ?? "—";
+
+  const kpis = [
+    { label: t.kpiEngineHrs, value: lastHrs,      unit: "hrs",   color: "text-[#FFCD11]" },
+    { label: t.kpiFuelTotal, value: totalFuel,    unit: "L",     color: "text-blue-400"  },
+    { label: t.kpiCycles,    value: totalCycles,  unit: "total", color: "text-green-400" },
+    { label: t.kpiAlerts,    value: alertCount,   unit: "events",color: "text-red-400"   },
+  ];
 
   return (
-    <Section title={t.telemetryTitle} icon="📡">
-      <div className="overflow-x-auto rounded-lg border border-slate-700">
+    <div className="p-4 sm:p-6">
+      <SectionTitle icon="📡" title={t.telemetryTitle} />
+
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        {kpis.map(k => (
+          <Panel key={k.label}>
+            <p className="text-slate-500 text-xs mb-1">{k.label}</p>
+            <p className={`text-3xl font-black ${k.color}`}>{k.value}</p>
+            <p className="text-slate-600 text-xs mt-0.5">{k.unit}</p>
+          </Panel>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto rounded-xl border border-slate-700">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-slate-800 text-yellow-400 text-left">
-              {[
-                t.timestamp,
-                t.engineHours,
-                t.fuelUsed,
-                t.loadCycles,
-                t.idlingTime,
-                t.seatbelt,
-                t.alert,
-              ].map((h) => (
-                <th key={h} className="px-4 py-3 font-semibold whitespace-nowrap">
-                  {h}
-                </th>
+            <tr className="bg-slate-900 text-[#FFCD11] text-left">
+              {[t.colTimestamp, t.colEngineHrs, t.colFuel, t.colCycles, t.colIdle, t.colSeatbelt, t.colAlert].map(h => (
+                <th key={h} className="px-4 py-3 font-semibold whitespace-nowrap">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {telemetry.map((row, i) => (
-              <tr
-                key={i}
-                className={`border-t border-slate-700 transition-colors ${
-                  row.safetyAlert
-                    ? "bg-red-950 hover:bg-red-900"
-                    : "hover:bg-slate-800"
-                }`}
-              >
-                <td className="px-4 py-2.5 text-slate-300 whitespace-nowrap font-mono text-xs">
-                  {row.timestamp}
+              <tr key={i} className={`border-t border-slate-800 transition-colors ${
+                row.safetyAlert ? "bg-red-950/60 hover:bg-red-900/40" : "hover:bg-slate-800/50"
+              }`}>
+                <td className="px-4 py-3 font-mono text-xs text-slate-400 whitespace-nowrap">{row.timestamp}</td>
+                <td className="px-4 py-3 text-white">{row.engineHours}</td>
+                <td className="px-4 py-3 text-white">{row.fuelUsed} L</td>
+                <td className="px-4 py-3 text-white">{row.loadCycles}</td>
+                <td className={`px-4 py-3 font-medium ${row.idlingTime > 45 ? "text-red-400" : "text-white"}`}>
+                  {row.idlingTime}{row.idlingTime > 45 ? " ⚠" : ""}
                 </td>
-                <td className="px-4 py-2.5 text-white">{row.engineHours}</td>
-                <td className="px-4 py-2.5 text-white">{row.fuelUsed} L</td>
-                <td className="px-4 py-2.5 text-white">{row.loadCycles}</td>
-                <td
-                  className={`px-4 py-2.5 font-medium ${
-                    row.idlingTime > 45 ? "text-red-400" : "text-white"
-                  }`}
-                >
-                  {row.idlingTime}
-                  {row.idlingTime > 45 && " ⚠"}
+                <td className="px-4 py-3">
+                  <Badge ok={row.seatbeltStatus === "Fastened"} labelOk={t.fastened} labelBad={t.unfastened} />
                 </td>
-                <td className="px-4 py-2.5">
-                  <Badge
-                    ok={row.seatbeltStatus === "Fastened"}
-                    labelTrue={t.fastened}
-                    labelFalse={t.unfastened}
-                  />
-                </td>
-                <td className="px-4 py-2.5">
-                  <Badge
-                    ok={!row.safetyAlert}
-                    labelTrue={t.no}
-                    labelFalse={t.yes}
-                  />
+                <td className="px-4 py-3">
+                  <Badge ok={!row.safetyAlert} labelOk={t.no} labelBad={t.yes} />
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-
-      {/* KPI strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-        {[
-          {
-            label: t.engineHours,
-            value: telemetry[telemetry.length - 1]?.engineHours,
-            unit: "hrs",
-            color: "text-yellow-400",
-          },
-          {
-            label: t.fuelUsed,
-            value: telemetry.reduce((s, r) => s + r.fuelUsed, 0).toFixed(1),
-            unit: "L total",
-            color: "text-blue-400",
-          },
-          {
-            label: t.loadCycles,
-            value: telemetry.reduce((s, r) => s + r.loadCycles, 0),
-            unit: "total",
-            color: "text-green-400",
-          },
-          {
-            label: t.alert,
-            value: telemetry.filter((r) => r.safetyAlert).length,
-            unit: "events",
-            color: "text-red-400",
-          },
-        ].map((kpi) => (
-          <div key={kpi.label} className="bg-slate-800 rounded-lg p-3 border border-slate-700">
-            <p className="text-slate-400 text-xs">{kpi.label}</p>
-            <p className={`text-2xl font-bold ${kpi.color}`}>{kpi.value}</p>
-            <p className="text-slate-500 text-xs">{kpi.unit}</p>
-          </div>
-        ))}
-      </div>
-    </Section>
+    </div>
   );
 }
 
-/** View 2 – ML Task Predictor */
-function PredictorView({ t }) {
-  const [loadCycles, setLoadCycles] = useState(8);
-  const [fuelLimit, setFuelLimit] = useState(5);
-  const [weather, setWeather] = useState("Dry");
-  const [result, setResult] = useState(null);
+// ---------------------------------------------------------------------------
+// View 2 — Environmental Impact & Action Center
+// ---------------------------------------------------------------------------
+function EnvironmentView({ t }) {
+  const [form, setForm] = useState({
+    load_cycles: 8, estimated_fuel: 5, weather_severity: 0, ground_stability: 0, ambient_temp: 22,
+  });
+  const [result, setResult]   = useState(null);
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
+  const [err, setErr]         = useState("");
 
-  const handlePredict = async () => {
-    setLoading(true);
-    setErr("");
-    setResult(null);
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleAnalyze = async () => {
+    setLoading(true); setErr(""); setResult(null);
     try {
-      const res = await fetch(`${API}/predict-time`, {
+      const res  = await fetch(`${API}/analyze-environment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ loadCycles, fuelLimit, weather }),
+        body: JSON.stringify(form),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.errors?.join(", ") || "Unknown error");
-      setResult(data.predictedDurationMin);
+      if (!res.ok) throw new Error(data.errors?.join(", ") || "Error");
+      setResult(data);
     } catch (e) {
-      setErr(e.message);
+      setErr(t.errorAnalyze + " — " + e.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const weatherOptions = [
-    { value: "Dry", label: t.dry },
-    { value: "Rain", label: t.rain },
-    { value: "Mud", label: t.mud },
-  ];
+  const etaBarPct = result ? Math.min((result.predicted_eta_minutes / 300) * 100, 100) : 0;
 
   return (
-    <Section title={t.predictorTitle} icon="🤖">
-      <div className="grid sm:grid-cols-2 gap-6">
-        {/* Inputs */}
-        <div className="space-y-5">
-          <InputField
-            label={t.loadCyclesLabel}
-            type="number"
-            min={1}
-            max={30}
-            value={loadCycles}
-            onChange={(v) => setLoadCycles(Number(v))}
-          />
-          <InputField
-            label={t.fuelLimitLabel}
-            type="number"
-            min={0.5}
-            max={20}
-            step={0.5}
-            value={fuelLimit}
-            onChange={(v) => setFuelLimit(Number(v))}
-          />
-          <div>
-            <label className="block text-slate-300 text-sm font-medium mb-2">
-              {t.weatherLabel}
-            </label>
-            <div className="flex gap-2">
-              {weatherOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setWeather(opt.value)}
-                  className={`flex-1 py-2 rounded text-sm font-semibold transition-colors ${
-                    weather === opt.value
-                      ? "bg-yellow-400 text-black"
-                      : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
+    <div className="p-4 sm:p-6">
+      <SectionTitle icon="🌍" title={t.envTitle} />
+      <p className="text-slate-400 text-sm mb-6">{t.envSubtitle}</p>
 
-          <button
-            onClick={handlePredict}
-            disabled={loading}
-            className="w-full bg-yellow-400 hover:bg-yellow-300 disabled:opacity-50 text-black font-bold py-3 rounded-lg transition-colors text-sm"
-          >
-            {loading ? t.predicting : t.predictBtn}
+      <div className="grid lg:grid-cols-2 gap-6">
+
+        {/* ── Input form ── */}
+        <Panel className="space-y-4">
+          <InputRow label={`${t.lblLoadCycles} (1–25)`}>
+            <NumInput value={form.load_cycles} onChange={v => set("load_cycles", v)} min={1} max={25} />
+          </InputRow>
+          <InputRow label={`${t.lblFuel} (0.5–20)`}>
+            <NumInput value={form.estimated_fuel} onChange={v => set("estimated_fuel", v)} min={0.5} max={20} step={0.5} />
+          </InputRow>
+          <InputRow label={t.lblWeather}>
+            <SelectInput value={form.weather_severity} onChange={v => set("weather_severity", v)} options={t.weatherOpts} />
+          </InputRow>
+          <InputRow label={t.lblGround}>
+            <SelectInput value={form.ground_stability} onChange={v => set("ground_stability", v)} options={t.groundOpts} />
+          </InputRow>
+          <InputRow label={`${t.lblTemp} (-20 to 50)`}>
+            <NumInput value={form.ambient_temp} onChange={v => set("ambient_temp", v)} min={-20} max={50} />
+          </InputRow>
+
+          <button onClick={handleAnalyze} disabled={loading}
+            className="w-full bg-[#FFCD11] hover:bg-yellow-300 disabled:opacity-50 text-black font-bold py-3 rounded-xl transition-colors text-sm mt-2">
+            {loading ? t.analyzing : t.analyzeBtn}
           </button>
-        </div>
+          {err && <p className="text-red-400 text-xs mt-1">{err}</p>}
+        </Panel>
 
-        {/* Result panel */}
-        <div className="flex items-center justify-center">
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center w-full">
-            {result !== null ? (
-              <>
-                <div className="text-6xl font-black text-yellow-400 mb-1">
-                  {result}
-                </div>
-                <div className="text-slate-400 text-sm">minutes</div>
-                <div className="mt-4 text-slate-300 text-sm font-medium">
-                  {t.predictResult(result)}
-                </div>
-                {/* Simple visual bar */}
-                <div className="mt-4 bg-slate-700 rounded-full h-2">
-                  <div
-                    className="bg-yellow-400 h-2 rounded-full transition-all duration-700"
-                    style={{ width: `${Math.min((result / 300) * 100, 100)}%` }}
-                  />
-                </div>
-              </>
-            ) : err ? (
-              <p className="text-red-400 text-sm">{err}</p>
-            ) : (
-              <p className="text-slate-500 text-sm">
-                Configure inputs and click predict
+        {/* ── Results ── */}
+        <div className="space-y-4">
+          {!result && !loading && (
+            <Panel className="flex items-center justify-center h-full min-h-[200px]">
+              <p className="text-slate-600 text-sm text-center">
+                Configure conditions on the left and click<br />
+                <span className="text-[#FFCD11] font-semibold">{t.analyzeBtn}</span>
               </p>
-            )}
-          </div>
+            </Panel>
+          )}
+          {loading && <LoadingSpinner text={t.analyzing} />}
+
+          {result && (
+            <>
+              {/* ETA card */}
+              <Panel>
+                <p className="text-slate-400 text-xs mb-2">{t.resultETA}</p>
+                <div className="flex items-end gap-2 mb-2">
+                  <span className="text-5xl font-black text-[#FFCD11]">{result.predicted_eta_minutes}</span>
+                  <span className="text-slate-400 text-sm pb-1">{t.minutes}</span>
+                </div>
+                <div className="bg-slate-700 rounded-full h-2">
+                  <div className="bg-[#FFCD11] h-2 rounded-full transition-all duration-700"
+                    style={{ width: `${etaBarPct}%` }} />
+                </div>
+              </Panel>
+
+              {/* Risk badge card */}
+              <Panel>
+                <p className="text-slate-400 text-xs mb-3">{t.resultRisk}</p>
+                <RiskBadge level={result.risk_level} />
+                <p className="text-slate-400 text-xs mt-2">{result.risk_description}</p>
+                {/* Probability mini-bar */}
+                <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+                  {[
+                    { label: "Low",      val: result.risk_probabilities.LOW,      color: "bg-green-500" },
+                    { label: "Moderate", val: result.risk_probabilities.MODERATE, color: "bg-yellow-500" },
+                    { label: "Critical", val: result.risk_probabilities.CRITICAL, color: "bg-red-500" },
+                  ].map(p => (
+                    <div key={p.label}>
+                      <div className="bg-slate-700 rounded-full h-1.5 mb-1">
+                        <div className={`${p.color} h-1.5 rounded-full transition-all duration-700`}
+                          style={{ width: `${p.val * 100}%` }} />
+                      </div>
+                      <span className="text-slate-500">{p.label} {(p.val * 100).toFixed(0)}%</span>
+                    </div>
+                  ))}
+                </div>
+              </Panel>
+
+              {/* Machine impacts */}
+              <Panel>
+                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                  {t.resultImpacts}
+                </p>
+                <ul className="space-y-2">
+                  {result.machine_impacts.map((imp, i) => (
+                    <li key={i} className="flex gap-2 text-sm text-slate-300">
+                      <span className="text-[#FFCD11] flex-shrink-0 mt-0.5">•</span>
+                      {imp}
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+
+              {/* Recommended actions */}
+              <Panel className={result.risk_level === 2 ? "border-red-700" : result.risk_level === 1 ? "border-yellow-700" : "border-green-800"}>
+                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                  {t.resultActions}
+                </p>
+                <ul className="space-y-2">
+                  {result.recommended_next_actions.map((act, i) => (
+                    <li key={i} className={`flex gap-2 text-sm font-medium ${
+                      result.risk_level === 2 ? "text-red-300" : result.risk_level === 1 ? "text-yellow-300" : "text-green-300"
+                    }`}>
+                      <span className="flex-shrink-0 mt-0.5">{i + 1}.</span>
+                      {act}
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            </>
+          )}
         </div>
       </div>
-
-      {/* Terrain impact legend */}
-      <div className="mt-6 grid grid-cols-3 gap-3 text-center text-xs text-slate-400">
-        {[
-          { icon: "☀️", label: t.dry, note: "Baseline" },
-          { icon: "🌧️", label: t.rain, note: "+~18 min" },
-          { icon: "🟫", label: t.mud, note: "+~36 min" },
-        ].map((item) => (
-          <div key={item.label} className="bg-slate-800 rounded-lg p-3 border border-slate-700">
-            <div className="text-2xl mb-1">{item.icon}</div>
-            <div className="font-medium text-slate-300">{item.label}</div>
-            <div>{item.note}</div>
-          </div>
-        ))}
-      </div>
-    </Section>
+    </div>
   );
 }
 
-/** View 3 – Operator Training Hub */
+// ---------------------------------------------------------------------------
+// View 3 — Training Hub
+// ---------------------------------------------------------------------------
 function TrainingView({ t }) {
-  const [checked, setChecked] = useState(
-    () => new Array(t.checklistItems.length).fill(false)
-  );
+  const [checked, setChecked] = useState(() => new Array(t.checklistItems.length).fill(false));
+  useEffect(() => setChecked(new Array(t.checklistItems.length).fill(false)), [t]);
 
-  // Re-initialise checklist when language changes (item count stays same)
-  useEffect(() => {
-    setChecked(new Array(t.checklistItems.length).fill(false));
-  }, [t]);
+  const toggle = i => setChecked(p => p.map((v, idx) => idx === i ? !v : v));
+  const done   = checked.filter(Boolean).length;
+  const pct    = Math.round((done / checked.length) * 100);
 
-  const toggle = (i) =>
-    setChecked((prev) => prev.map((v, idx) => (idx === i ? !v : v)));
-
-  const completedCount = checked.filter(Boolean).length;
-  const progress = Math.round((completedCount / checked.length) * 100);
-
-  const tagColors = {
-    Safety: "bg-red-900 text-red-300",
-    Efficiency: "bg-blue-900 text-blue-300",
-    Terrain: "bg-amber-900 text-amber-300",
-    Seguridad: "bg-red-900 text-red-300",
-    Eficiencia: "bg-blue-900 text-blue-300",
-    Terreno: "bg-amber-900 text-amber-300",
-    सुरक्षा: "bg-red-900 text-red-300",
-    दक्षता: "bg-blue-900 text-blue-300",
-    भूमि: "bg-amber-900 text-amber-300",
+  const tagColor = {
+    Safety: "bg-red-900 text-red-300", Efficiency: "bg-blue-900 text-blue-300",
+    Terrain: "bg-amber-900 text-amber-300", Climate: "bg-cyan-900 text-cyan-300",
+    Seguridad: "bg-red-900 text-red-300", Eficiencia: "bg-blue-900 text-blue-300",
+    Terreno: "bg-amber-900 text-amber-300", Clima: "bg-cyan-900 text-cyan-300",
+    सुरक्षा: "bg-red-900 text-red-300", दक्षता: "bg-blue-900 text-blue-300",
+    भूमि: "bg-amber-900 text-amber-300", जलवायु: "bg-cyan-900 text-cyan-300",
   };
 
-  const microCards = [
-    { title: t.card1Title, body: t.card1Body, tag: t.card1Tag, icon: "🔄" },
-    { title: t.card2Title, body: t.card2Body, tag: t.card2Tag, icon: "⛽" },
-    { title: t.card3Title, body: t.card3Body, tag: t.card3Tag, icon: "🏔️" },
-  ];
-
   return (
-    <Section title={t.trainingTitle} icon="🎓">
+    <div className="p-4 sm:p-6">
+      <SectionTitle icon="🎓" title={t.trainingTitle} />
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Pre-shift checklist */}
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-5">
-          <div className="flex items-center justify-between mb-4">
+
+        {/* Checklist */}
+        <Panel>
+          <div className="flex items-center justify-between mb-3">
             <h3 className="text-white font-semibold">{t.checklistTitle}</h3>
-            <span className="text-yellow-400 text-sm font-bold">
-              {completedCount}/{checked.length}
-            </span>
+            <span className="text-[#FFCD11] text-sm font-bold">{done}/{checked.length}</span>
           </div>
-
-          {/* Progress bar */}
           <div className="bg-slate-700 rounded-full h-2 mb-4">
-            <div
-              className={`h-2 rounded-full transition-all duration-500 ${
-                progress === 100 ? "bg-green-400" : "bg-yellow-400"
-              }`}
-              style={{ width: `${progress}%` }}
-            />
+            <div className={`h-2 rounded-full transition-all duration-500 ${pct === 100 ? "bg-green-400" : "bg-[#FFCD11]"}`}
+              style={{ width: `${pct}%` }} />
           </div>
-
-          <ul className="space-y-2">
+          <ul className="space-y-2.5">
             {t.checklistItems.map((item, i) => (
-              <li
-                key={i}
-                onClick={() => toggle(i)}
-                className="flex items-start gap-3 cursor-pointer group"
-              >
-                <span
-                  className={`mt-0.5 w-5 h-5 flex-shrink-0 rounded border-2 flex items-center justify-center transition-colors ${
-                    checked[i]
-                      ? "bg-green-500 border-green-500"
-                      : "border-slate-500 group-hover:border-yellow-400"
-                  }`}
-                >
+              <li key={i} onClick={() => toggle(i)}
+                className="flex items-start gap-3 cursor-pointer group select-none">
+                <span className={`mt-0.5 w-5 h-5 flex-shrink-0 rounded border-2 flex items-center justify-center transition-colors ${
+                  checked[i] ? "bg-green-500 border-green-500" : "border-slate-600 group-hover:border-[#FFCD11]"
+                }`}>
                   {checked[i] && (
                     <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                     </svg>
                   )}
                 </span>
-                <span
-                  className={`text-sm transition-colors ${
-                    checked[i] ? "line-through text-slate-500" : "text-slate-300 group-hover:text-white"
-                  }`}
-                >
-                  {item}
-                </span>
+                <span className={`text-sm transition-colors ${
+                  checked[i] ? "line-through text-slate-600" : "text-slate-300 group-hover:text-white"
+                }`}>{item}</span>
               </li>
             ))}
           </ul>
-          {progress === 100 && (
-            <div className="mt-4 text-center text-green-400 font-semibold text-sm">
-              ✅ All checks complete — Safe to operate!
-            </div>
+          {pct === 100 && (
+            <p className="mt-4 text-center text-green-400 font-semibold text-sm">{t.checkAll}</p>
           )}
-        </div>
+        </Panel>
 
         {/* Micro-learning cards */}
         <div className="space-y-3">
           <h3 className="text-white font-semibold">{t.microTitle}</h3>
-          {microCards.map((card, i) => (
-            <div
-              key={i}
-              className="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-yellow-500 transition-colors"
-            >
+          {t.cards.map((card, i) => (
+            <Panel key={i} className="hover:border-[#FFCD11]/50 transition-colors">
               <div className="flex items-start gap-3">
                 <span className="text-2xl flex-shrink-0">{card.icon}</span>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h4 className="text-white font-semibold text-sm">{card.title}</h4>
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        tagColors[card.tag] || "bg-slate-700 text-slate-300"
-                      }`}
-                    >
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${tagColor[card.tag] || "bg-slate-700 text-slate-300"}`}>
                       {card.tag}
                     </span>
                   </div>
                   <p className="text-slate-400 text-xs leading-relaxed">{card.body}</p>
                 </div>
               </div>
-            </div>
+            </Panel>
           ))}
         </div>
+
       </div>
-    </Section>
-  );
-}
-
-/** View 4 – Environmental Impact Widget */
-function EnvironmentView({ t, anomalyData, loading, error }) {
-  if (loading) return <LoadingCard text={t.loading} />;
-  if (error) return <ErrorCard text={t.error} />;
-
-  const { totalWastedFuelL = 0, totalCO2WastedKg = 0, anomalyCount = 0, anomalies = [] } =
-    anomalyData || {};
-
-  // Equivalent metaphors for engagement
-  const treeDays = ((totalCO2WastedKg / 21.77) * 365).toFixed(1); // avg tree absorbs 21.77 kg CO2/yr
-
-  return (
-    <Section title={t.envTitle} icon="🌱">
-      <p className="text-slate-400 text-sm mb-5">{t.envSubtitle}</p>
-
-      {/* Big 3 KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <KPICard
-          icon="⛽"
-          value={totalWastedFuelL.toFixed(2)}
-          unit={t.litres}
-          label={t.wastedFuel}
-          color="text-orange-400"
-          border="border-orange-800"
-        />
-        <KPICard
-          icon="💨"
-          value={totalCO2WastedKg.toFixed(2)}
-          unit={t.kg}
-          label={t.co2Emitted}
-          color="text-red-400"
-          border="border-red-800"
-        />
-        <KPICard
-          icon="⚠️"
-          value={anomalyCount}
-          unit="events"
-          label={t.anomalyCount}
-          color="text-yellow-400"
-          border="border-yellow-800"
-        />
-      </div>
-
-      {/* Equivalency card */}
-      <div className="bg-slate-800 border border-green-900 rounded-xl p-4 mb-6 flex items-center gap-4">
-        <span className="text-4xl">🌳</span>
-        <div>
-          <p className="text-white font-semibold text-sm">CO₂ Equivalency</p>
-          <p className="text-slate-400 text-xs mt-1">
-            The wasted CO₂ would take a mature tree{" "}
-            <span className="text-green-400 font-bold">{treeDays} days</span> to
-            absorb.
-          </p>
-        </div>
-      </div>
-
-      {/* Per-anomaly breakdown */}
-      {anomalies.length > 0 && (
-        <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-slate-900 text-yellow-400 text-left">
-                <th className="px-4 py-3 font-semibold">Timestamp</th>
-                <th className="px-4 py-3 font-semibold">Flags</th>
-                <th className="px-4 py-3 font-semibold">Idle (min)</th>
-                <th className="px-4 py-3 font-semibold">Wasted (L)</th>
-                <th className="px-4 py-3 font-semibold">CO₂ (kg)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {anomalies.map((a, i) => (
-                <tr key={i} className="border-t border-slate-700 hover:bg-slate-700">
-                  <td className="px-4 py-2.5 text-slate-300 font-mono text-xs whitespace-nowrap">
-                    {a.timestamp}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <div className="flex flex-wrap gap-1">
-                      {a.flags.map((f) => (
-                        <span
-                          key={f}
-                          className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                            f === "SEATBELT_UNFASTENED"
-                              ? "bg-red-900 text-red-300"
-                              : "bg-orange-900 text-orange-300"
-                          }`}
-                        >
-                          {f.replace("_", " ")}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-4 py-2.5 text-orange-300">{a.idlingTime}</td>
-                  <td className="px-4 py-2.5 text-orange-400">{a.wastedFuelL.toFixed(3)}</td>
-                  <td className="px-4 py-2.5 text-red-400">{a.co2WastedKg.toFixed(3)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </Section>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Reusable primitive components
-// ---------------------------------------------------------------------------
-
-function Section({ title, icon, children }) {
-  return (
-    <div className="p-4 sm:p-6">
-      <h2 className="text-yellow-400 text-xl font-bold mb-5 flex items-center gap-2">
-        <span>{icon}</span>
-        {title}
-      </h2>
-      {children}
-    </div>
-  );
-}
-
-function KPICard({ icon, value, unit, label, color, border }) {
-  return (
-    <div className={`bg-slate-800 rounded-xl border ${border} p-5 text-center`}>
-      <div className="text-3xl mb-2">{icon}</div>
-      <div className={`text-4xl font-black ${color}`}>{value}</div>
-      <div className="text-slate-400 text-xs mt-0.5">{unit}</div>
-      <div className="text-slate-300 text-sm mt-1 font-medium">{label}</div>
-    </div>
-  );
-}
-
-function InputField({ label, ...inputProps }) {
-  const { onChange, ...rest } = inputProps;
-  return (
-    <div>
-      <label className="block text-slate-300 text-sm font-medium mb-2">{label}</label>
-      <input
-        {...rest}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-yellow-400 transition-colors"
-      />
-    </div>
-  );
-}
-
-function LoadingCard({ text }) {
-  return (
-    <div className="p-12 text-center">
-      <div className="inline-block w-8 h-8 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mb-4" />
-      <p className="text-slate-400">{text}</p>
-    </div>
-  );
-}
-
-function ErrorCard({ text }) {
-  return (
-    <div className="p-8 m-4 bg-red-950 border border-red-700 rounded-xl text-red-300 text-sm">
-      ⚠ {text}
     </div>
   );
 }
@@ -911,88 +725,47 @@ function ErrorCard({ text }) {
 // ---------------------------------------------------------------------------
 export default function App() {
   const [lang, setLang] = useState("en");
-  const [activeTab, setActiveTab] = useState("telemetry");
-
-  const [telemetry, setTelemetry] = useState([]);
-  const [telemetryLoading, setTelemetryLoading] = useState(true);
-  const [telemetryError, setTelemetryError] = useState(false);
-
-  const [anomalyData, setAnomalyData] = useState(null);
-  const [anomalyLoading, setAnomalyLoading] = useState(true);
-  const [anomalyError, setAnomalyError] = useState(false);
-
+  const [tab,  setTab]  = useState("telemetry");
   const t = DICT[lang];
 
-  const fetchTelemetry = useCallback(async () => {
-    setTelemetryLoading(true);
-    setTelemetryError(false);
+  const [telemetry,  setTelemetry]  = useState([]);
+  const [telemLoad,  setTelemLoad]  = useState(true);
+  const [telemErr,   setTelemErr]   = useState(false);
+
+  const [anomalies,  setAnomalies]  = useState([]);
+
+  const fetchAll = useCallback(async () => {
+    setTelemLoad(true); setTelemErr(false);
     try {
-      const res = await fetch(`${API}/telemetry`);
-      const data = await res.json();
-      setTelemetry(data.data || []);
+      const [tRes, aRes] = await Promise.all([
+        fetch(`${API}/telemetry`),
+        fetch(`${API}/anomalies`),
+      ]);
+      const tData = await tRes.json();
+      const aData = await aRes.json();
+      setTelemetry(tData.data  || []);
+      setAnomalies(aData.anomalies || []);
     } catch {
-      setTelemetryError(true);
+      setTelemErr(true);
     } finally {
-      setTelemetryLoading(false);
+      setTelemLoad(false);
     }
   }, []);
 
-  const fetchAnomalies = useCallback(async () => {
-    setAnomalyLoading(true);
-    setAnomalyError(false);
-    try {
-      const res = await fetch(`${API}/anomalies`);
-      const data = await res.json();
-      setAnomalyData(data);
-    } catch {
-      setAnomalyError(true);
-    } finally {
-      setAnomalyLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchTelemetry();
-    fetchAnomalies();
-  }, [fetchTelemetry, fetchAnomalies]);
-
-  // Active anomalies for banner
-  const activeAnomalies = anomalyData?.anomalies || [];
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col">
-      <NavBar
-        t={t}
-        lang={lang}
-        setLang={setLang}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-      />
-
-      <SafetyBanner t={t} lang={lang} anomalies={activeAnomalies} />
+    <div className="min-h-screen bg-[#0d0d0f] text-white flex flex-col">
+      <NavBar t={t} lang={lang} setLang={setLang} tab={tab} setTab={setTab} />
+      <SafetyBanner t={t} lang={lang} anomalies={anomalies} />
 
       <main className="flex-1">
-        {activeTab === "telemetry" && (
-          <TelemetryView
-            t={t}
-            telemetry={telemetry}
-            loading={telemetryLoading}
-            error={telemetryError}
-          />
-        )}
-        {activeTab === "predictor" && <PredictorView t={t} />}
-        {activeTab === "training" && <TrainingView t={t} />}
-        {activeTab === "environment" && (
-          <EnvironmentView
-            t={t}
-            anomalyData={anomalyData}
-            loading={anomalyLoading}
-            error={anomalyError}
-          />
-        )}
+        {tab === "telemetry"   && <TelemetryView   t={t} telemetry={telemetry} loading={telemLoad} error={telemErr} />}
+        {tab === "environment" && <EnvironmentView t={t} />}
+        {tab === "training"    && <TrainingView    t={t} />}
       </main>
 
-      <footer className="bg-slate-900 border-t border-slate-800 px-4 py-3 text-center text-slate-500 text-xs">
+      <footer className="bg-[#18181c] border-t border-slate-800 px-4 py-3 text-center text-slate-600 text-xs">
         {t.footerText}
       </footer>
     </div>
